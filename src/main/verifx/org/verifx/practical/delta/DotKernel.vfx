@@ -1,0 +1,74 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.CvRDTProof2
+
+class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) {
+
+    def dotIn(d: Tuple[K, Int]): Boolean = {
+        if (this.cc.contains(d.fst) && (d.snd <= this.cc.get(d.fst))) {
+            true
+        } else if (this.dc.contains(d)) {
+            true
+        } else false
+    }
+
+     def makeDot(id: K): Tuple[K, Int] = {
+       val value = this.cc.getOrElse(id, 0)
+       if (value == 0) {
+        this.cc.add(id, 1); new Tuple(id, 1)
+       }
+       else {
+        this.cc.add(id, value + 1); new Tuple(id, value + 1)
+       }
+     }
+
+     def insertDot(d: Tuple[K, Int]): DotContext[K] = {
+       this.dc.add(d)
+       this
+     }
+
+     private def max(a: Int, b: Int): Int = {if (a >= b) a else b}
+
+     def join(o: DotContext[K]): DotContext[K] = {
+       // Merging cc
+       val newcc = this.cc.combine(o.cc, (v1: Int, v2: Int) => this.max(v1, v2))
+       // Merging dc
+       val newdc = this.dc.union(o.dc)
+       new DotContext(newcc, newdc)
+     }
+}
+
+class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends DeltaCRDT[DotKernel[K, T]] {
+    def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
+        val thisKeys = this.ds.keys()
+        val otherKeys = other.ds.keys()
+        val bothKeys = thisKeys.intersect(otherKeys)
+        val onlyThisKeys = thisKeys.diff(bothKeys)
+        val onlyOtherKeys = otherKeys.diff(bothKeys)
+        val newds = this.ds.filter((key: Tuple[K, Int], value: T) => !onlyThisKeys.contains(key))
+        val onlyOtherKeyValues = onlyOtherKeys.map[Tuple[Tuple[K, Int], T]]((key: Tuple[K, Int]) => new Tuple(key, other.ds.get(key)))
+        onlyOtherKeyValues.forall((t: Tuple[Tuple[K, Int], T]) => {newds.add(t.fst, t.snd); true})
+        val res = new DotKernel[K, T](newds, this.c.join(other.c))
+        res
+    }
+
+    def add(id: K, value: T): DotKernel[K, T] = {
+        val dot = this.c.makeDot(id)
+        this.ds.add(dot, value)
+        val res = new DotKernel[K, T](new Map[Tuple[K, Int], T](), new DotContext[K](new Map[K, Int](), new Set[Tuple[K, Int]]()))
+        res.ds.add(dot, value)
+        res.c.insertDot(dot)
+        res
+    }
+
+    def rmv(dot: Tuple[K, Int]): DotKernel[K, T] = {
+        val res = new DotKernel[K, T](new Map[Tuple[K, Int], T](), new DotContext[K](new Map[K, Int](), new Set[Tuple[K, Int]]()))
+        if (this.ds.contains(dot)) {
+            val dsit = this.ds.get(dot)
+            this.ds.remove(dot)
+            res.c.insertDot(dot)
+            res
+        } else res
+    }
+}
+
+object DotKernel extends CvRDTProof2[DotKernel]
