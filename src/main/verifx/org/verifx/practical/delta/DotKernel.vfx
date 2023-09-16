@@ -1,7 +1,9 @@
 import org.verifx.practical.crdts.DeltaCRDT
 import org.verifx.practical.crdts.CvRDTProof2
+import org.verifx.practical.crdts.CvRDTProof1
 
-class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) {
+
+class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[DotContext[K]] {
 
     def dotIn(d: Tuple[K, Int]): Boolean = {
         if (this.cc.contains(d.fst) && (d.snd <= this.cc.get(d.fst))) {
@@ -22,19 +24,26 @@ class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) {
      }
 
      def insertDot(d: Tuple[K, Int]): DotContext[K] = {
-       this.dc.add(d)
-       this
+       new DotContext(this.cc, this.dc.add(d))
      }
 
      private def max(a: Int, b: Int): Int = {if (a >= b) a else b}
 
      def join(o: DotContext[K]): DotContext[K] = {
-       // Merging cc
+       // Merging cc (this takes the max from both, keeping the singular ones alive
        val newcc = this.cc.combine(o.cc, (v1: Int, v2: Int) => this.max(v1, v2))
        // Merging dc
-       val newdc = this.dc.union(o.dc)
+       val newdc = o.dc.union(this.dc)
        new DotContext(newcc, newdc)
      }
+
+     def merge(o: DotContext[K]): DotContext[K] = {
+            // Merging cc (this takes the max from both, keeping the singular ones alive
+            val newcc = this.cc.combine(o.cc, (v1: Int, v2: Int) => this.max(v1, v2))
+            // Merging dc
+            val newdc = o.dc.union(this.dc)
+            new DotContext(newcc, newdc)
+          }
 }
 
 class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends DeltaCRDT[DotKernel[K, T]] {
@@ -44,9 +53,14 @@ class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends Delta
         val bothKeys = thisKeys.intersect(otherKeys)
         val onlyThisKeys = thisKeys.diff(bothKeys)
         val onlyOtherKeys = otherKeys.diff(bothKeys)
-        val newds = this.ds.filter((key: Tuple[K, Int], value: T) => !onlyThisKeys.contains(key))
-        val onlyOtherKeyValues = onlyOtherKeys.map[Tuple[Tuple[K, Int], T]]((key: Tuple[K, Int]) => new Tuple(key, other.ds.get(key)))
-        onlyOtherKeyValues.forall((t: Tuple[Tuple[K, Int], T]) => {newds.add(t.fst, t.snd); true})
+        val onlyThisKeysKnownByOtherC = onlyThisKeys.filter((k: Tuple[K, Int]) => other.c.dotIn(k))
+        val onlyOtherKeysNotKnownByOurC = onlyOtherKeys.filter((k: Tuple[K, Int]) => !this.c.dotIn(k))
+        //remove all keys known by the other c from the new ds (started from the our ds
+        val newds = this.ds.filter((key: Tuple[K, Int], value: T) => !onlyThisKeysKnownByOtherC.contains(key))
+        //only keep the map values known by our c
+        val onlyOtherKeyValues = other.ds.filter((key: Tuple[K, Int], value: T) => onlyOtherKeysNotKnownByOurC.contains(key))
+        //from the two values, get the second one as preference, since that one should override the first one
+        val mergedDs = newds.combine(onlyOtherKeyValues, (v1: T, v2: T) => v2)
         val res = new DotKernel[K, T](newds, this.c.join(other.c))
         res
     }
@@ -70,5 +84,7 @@ class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends Delta
         } else res
     }
 }
+
+object DotContext extends CvRDTProof1[DotContext]
 
 object DotKernel extends CvRDTProof2[DotKernel]
