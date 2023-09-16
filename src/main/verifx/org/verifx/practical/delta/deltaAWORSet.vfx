@@ -1,0 +1,32 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.CvRDTProof
+
+////////////////////////////////////
+// Add Wins Observed Removed Set //
+//////////////////////////////////
+
+class deltaAWORSet[E, K](dk: DotKernel[E, K], id: K) extends DeltaCRDT[deltaAWORSet[E, K]] {
+
+    def read(): Set[E] = {
+        val res = new Set[E]()
+        this.dk.ds.forall((k, v) => res.add(k.snd))
+        res
+    }
+
+    def add(e: E): deltaAWORSet[E, K] = {
+        val res = new deltaAWORSet[E,K]()
+        res.dk = this.dk.rmv(e)
+        res.dk.merge(dk.add(id, e))
+        res
+    }
+
+    def rmv(e: E): deltaAWORSet[E, K] = {
+        val res = new deltaAWORSet[E,K]()
+        res.dk = this.dk.rmv(e)
+        res
+    }
+
+    def merge(other: deltaAWORSet[E,K]): Unit = {
+        this.dk.merge(other.dk)
+    }
+}
