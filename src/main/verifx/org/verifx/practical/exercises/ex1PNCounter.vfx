@@ -1,0 +1,31 @@
+import org.verifx.practical.crdts.CvRDT
+import org.verifx.practical.crdts.CvRDTProof
+import org.verifx.practical.exercises.GCounter
+
+// Exercise 1: Implement a PN-Counter as a composition of two G-Counters
+/*
+class PNCounter(...) extends CvRDT[PNCounter] {
+  def value(): Int = {
+    // TODO
+  }
+
+  def increment(replica: Int): PNCounter = {
+    // TODO
+  }
+
+  def decrement(replica: Int): PNCounter = {
+    // TODO
+  }
+
+  def merge(that: PNCounter): PNCounter = {
+    // TODO
+  }
+
+  def compare(that: PNCounter): Boolean = {
+    // TODO
+  }
+}
+
+object PNCounter extends CvRDTProof[PNCounter]
+*/
+

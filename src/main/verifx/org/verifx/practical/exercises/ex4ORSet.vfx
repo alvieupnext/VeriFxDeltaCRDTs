@@ -1,0 +1,70 @@
+/*
+import org.verifx.practical.crdts.CmRDT
+import org.verifx.practical.crdts.CmRDTProof2
+
+
+// Implementation of a unique identifier.
+// Keeps a replica ID (which must be unique!) and a counter that is local to the replica.
+class Tag[ID](replica: ID, counter: Int)
+
+// Operation-based implementation of an OR-Set.
+// Follows Specification 15 from the "Comprehensive Study of CRDTs".
+object Op {
+  enum SetOp[V, ID] {
+    Add(e: V) | Remove(e: V)
+  }
+
+  enum SetMsg[V, ID] {
+    AddMsg(e: V, tag: Tag[ID]) | RemoveMsg(e: V, tags: Set[Tag[ID]])
+  }
+}
+
+class ORSet[V, ID](...) extends CmRDT[SetOp[V, ID], SetMsg[V, ID], ORSet[V, ID]] {
+
+  def lookup(e: V): Boolean = // TODO
+
+  // prepares an add message
+  def add(e: V): SetMsg[V, ID] =  // TODO
+
+  // applies an add message
+  def addDownstream(e: V, tag: Tag[ID]): ORSet[V, ID] = {
+     // TODO
+  }
+
+  // prepares a remove message
+  def remove(e: V): SetMsg[V, ID] = // TODO
+
+  // applies a remove message
+  def removeDownstream(e: V, tags: Set[Tag[ID]]): ORSet[V, ID] = {
+    // TODO
+  }
+
+  override def enabledSrc(op: SetOp[V, ID]) = op match {
+    case Add(e) => true // `add` has no source precondition
+    case Remove(e) => this.preRemove(e)
+  }
+
+  // Compatible should encode that a remove operation cannot remove a concurrently added element
+  // because every element is added with a unique tag (so it cannot be removed before having observed it)
+  override def compatible(x: SetMsg[V, ID], y: SetMsg[V, ID]): Boolean = x match {
+    // TODO
+  }
+
+  // prepare phase -- forwards to corresponding prepare method
+  def prepare(op: SetOp[V, ID]) = op match {
+    case Add(e) => this.add(e)
+    case Remove(e) => this.remove(e)
+  }
+
+  // effect phase -- forwards to corresponding effect method
+  def effect(msg: SetMsg[V, ID]) = msg match {
+    case AddMsg(e, tag) => this.addDownstream(e, tag)
+    case RemoveMsg(e, tags) => this.removeDownstream(e, tags)
+  }
+
+  // may want to override how instances are compared
+  //override def equals(that: ORSet[V, ID]) = { ... }
+}
+
+object ORSet extends CmRDTProof2[SetOp, SetMsg, ORSet]
+*/

@@ -1,0 +1,21 @@
+import org.verifx.practical.crdts.CvRDT
+import org.verifx.practical.crdts.CvRDTProof1
+
+// Exercise 3: Implement a state-based Two-Phase Set CRDT as a composition of two Grow-only Set CRDTs.
+/*
+class TwoPSet[V](...) extends CvRDT[TwoPSet[V]] {
+  def lookup(element: V): Boolean = // TODO
+  def add(element: V): TwoPSet[V] = // TODO
+  def remove(element: V): TwoPSet[V] = // TODO
+
+  def merge(that: TwoPSet[V]): TwoPSet[V] = {
+    // TODO
+  }
+
+  def compare(that: TwoPSet[V]): Boolean = {
+    // TODO
+  }
+}
+
+object TwoPSet extends CvRDTProof1[TwoPSet]
+*/

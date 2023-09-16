@@ -1,0 +1,40 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.CvRDTProof
+
+///////////////////////////////////
+// Delta increment-only Counter //
+/////////////////////////////////
+
+class deltaGCounter(entries: Vector[Int]) extends DeltaCRDT[deltaGCounter] {
+  def increment(replica: Int) = {
+    val count = this.entries.get(replica)
+    new deltaGCounter(new Vector[Int]().write(replica, count + 1))
+  }
+
+  @recursive
+  private def computeValue(sum: Int = 0, replica: Int = 0): Int = {
+    if (replica >= 0 && replica < this.entries.size) {
+      val count = this.entries.get(replica)
+      this.computeValue(sum + count, replica + 1)
+    }
+    else
+      sum
+  }
+
+  def value() = this.computeValue()
+
+  private def max(t: Tuple[Int, Int]) = if (t.fst >= t.snd) t.fst else t.snd
+
+  def merge(that: deltaGCounter): deltaGCounter = {
+    val mergedEntries = this.entries.zip(that.entries).map(this.max _)
+    new deltaGCounter(mergedEntries)
+  }
+
+//  def compare(that: deltaGCounter): Boolean = {
+//    this.entries
+//      .zip(that.entries)
+//      .forall((tup: Tuple[Int, Int]) => tup.fst <= tup.snd)
+//  }
+}
+
+object deltaGCounter extends CvRDTProof[deltaGCounter]

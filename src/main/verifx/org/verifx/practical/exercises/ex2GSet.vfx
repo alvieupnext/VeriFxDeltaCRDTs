@@ -1,0 +1,24 @@
+import org.verifx.practical.crdts.CvRDT
+import org.verifx.practical.crdts.CvRDTProof
+import org.verifx.practical.crdts.CvRDTProof1
+
+// Exercise 2.1: Implement a state-based grow-only set CRDT.
+/*
+class IntGSet(...) extends CvRDT[IntGSet] {
+  def add(element: Int): IntGSet = // TODO
+  def lookup(element: Int): Boolean = // TODO
+  def merge(that: IntGSet): IntGSet = // TODO
+  def compare(that: IntGSet): Boolean = // TODO
+}
+
+object IntGSet extends CvRDTProof[IntGSet]
+*/
+
+// Exercise 2.2: Now make the set generic in the type of elements it holds.
+/*
+class GSet ... {
+  // TODO
+}
+
+object GSet extends CvRDTProof1[GSet]
+*/
