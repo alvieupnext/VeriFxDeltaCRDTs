@@ -15,7 +15,7 @@ trait CvRDTProof2[ T[A, B] <: CvRDT[T[A, B]] ] {
           x.compatible(y) && x.compatible(z) && y.compatible(z)) =>: {
         x.merge(x).equals(x) && // idempotent
         x.merge(y).equals(y.merge(x)) && // commutative
-//        x.merge(y).merge(z).equals(x.merge(y.merge(z))) && // associative
+        x.merge(y).merge(z).equals(x.merge(y.merge(z))) && // associative
         x.merge(y).reachable() && // merged state is reachable
         x.merge(y).merge(z).reachable() &&
         x.compatible(y) == y.compatible(x) // compatible commutes
