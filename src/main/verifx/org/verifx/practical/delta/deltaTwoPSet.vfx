@@ -1,0 +1,16 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.CvRDTProof1
+
+class deltaTwoPSet[V](added: Set[V] = new Set[V](), removed: Set[V] = new Set[V]()) extends DeltaCRDT[deltaTwoPSet[V]] {
+  def lookup(element: V) = this.added.contains(element) && !this.removed.contains(element)
+  def add(element: V) = new deltaTwoPSet(new Set[V]().add(element), new Set[V]())
+  def remove(element: V) = new deltaTwoPSet(new Set[V](), new Set[V]().add(element))
+
+  def merge(that: deltaTwoPSet[V]) = {
+    val mergedAdded = this.added.union(that.added)
+    val mergedRemoved = this.removed.union(that.removed)
+    new deltaTwoPSet(mergedAdded, mergedRemoved)
+  }
+}
+
+object deltaTwoPSet extends CvRDTProof1[deltaTwoPSet]
