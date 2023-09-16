@@ -1,0 +1,29 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.CvRDTProof2
+
+class RWLWWSet[U, T](s: Map[T, Tuple[U, Boolean]]) extends DeltaCRDT[RWLWWSet[U, T]] {
+
+ private def addrmv(ts: U, value: T, flag: Boolean): RWLWWSet[U, T] = {
+    val res = new Map[T, Tuple[U, Boolean]]()
+    res.add(value, new Tuple(ts, flag))
+    new RWLWWSet(res)
+  }
+
+  def add(ts: U, value: T): RWLWWSet[U, T] = this.addrmv(ts, value, false)
+
+  def remove(ts: U, value: T): RWLWWSet[U, T] = this.addrmv(ts, value, true)
+
+  private def <(t: Tuple[U, U]) = t.fst < t.snd
+
+  //Placeholder combine
+  def merge(that: RWLWWSet[U, T]) = new RWLWWSet(this.s.combine(that.s, (v1: Tuple[U, Boolean], v2: Tuple[U, Boolean]) => {
+  if (this.<(new Tuple(v1.fst, v2.fst))) {
+    v1
+  }
+  else v2
+  }
+  ))
+
+}
+
+object RWLWWSet extends CvRDTProof2[RWLWWSet]
