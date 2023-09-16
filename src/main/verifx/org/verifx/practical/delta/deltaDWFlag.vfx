@@ -1,0 +1,40 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.CvRDTProof
+
+/////////////////////////////
+// Delta Enable-Wins Flag //
+///////////////////////////
+
+// Define a class named deltaDWFlag with a type parameter K. It extends a DeltaCRDT with itself as the type parameter.
+class deltaDWFlag[K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[deltaDWFlag[K]] {
+
+    def read(): Boolean = {
+        this.dk.ds.keys.isEmpty()
+    }
+
+    def enable(): deltaDWFlag[K] = {
+        val res = new deltaDWFlag[K]()
+        res.dk = this.dk.rmv(false)
+        res
+    }
+
+    def disable(): deltaDWFlag[K] = {
+        val res = new deltaDWFlag[K]()
+        res.dk = this.dk.rmv(false)
+        res.dk.join(this.dk.add(id, false))
+        res
+    }
+
+    // Method to reset the flag. It creates a new instance of deltaDWFlag and sets its dot kernel to the result
+    // of removing all values from the current dot kernel.
+    def reset(): deltaDWFlag[K] = {
+        val res = new deltaDWFlag[K]()
+        res.dk = this.dk.rmv()
+        res
+    }
+
+    // Method to join another deltaDWFlag instance with this instance. It joins the dot kernels of both instances.
+    def join(other: deltaDWFlag[K]): Unit = {
+        this.dk.join(other.dk)
+    }
+}
