@@ -1,0 +1,63 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.CvRDTProof
+
+///////////////////////////////////
+// Delta increment-only LexCounter //
+/////////////////////////////////
+
+class deltaLexCounter(entries: Vector[Tuple[Int, Int]]) extends DeltaCRDT[deltaLexCounter] {
+  def increment(replica: Int) = {
+  //get current counterValue
+    val countPair = this.entries.get(replica)
+    new deltaLexCounter(new Vector[Tuple[Int, Int]]().write(replica, new Tuple(countPair.fst, countPair.snd + 1)))
+  }
+
+  def decrement(replica: Int) = {
+    //get current counterValue
+    val countPair = this.entries.get(replica)
+    //update epoch to add one
+    //decrement value
+    new deltaLexCounter(new Vector[Tuple[Int, Int]]().write(replica, new Tuple(countPair.fst + 1, countPair.snd - 1)))
+    }
+
+  @recursive
+  private def computeValue(sum: Int = 0, replica: Int = 0): Int = {
+    if (replica >= 0 && replica < this.entries.size) {
+      val count = this.entries.get(replica).snd
+      this.computeValue(sum + count, replica + 1)
+    }
+    else
+      sum
+  }
+
+  def value() = this.computeValue()
+
+// max function now compares the first element of the tuple first before moving on to the second
+  private def max(t: Tuple[Tuple[Int, Int], Tuple[Int, Int]]) = {
+   val firstTuple = t.fst
+   val secondTuple = t.snd
+   // return first tuple if the epoch value is bigger
+   if (firstTuple.fst > secondTuple.fst) {
+       firstTuple
+   }
+   //same for the second Tuple
+   else if (secondTuple.fst > firstTuple.fst) {
+        secondTuple
+   }
+   //if both epoch numbers are equal, take the max from the second value
+   else if (firstTuple.snd >= secondTuple.snd) firstTuple else secondTuple
+  }
+
+  def merge(that: deltaLexCounter): deltaLexCounter = {
+    val mergedEntries = this.entries.zip(that.entries).map(this.max _)
+    new deltaLexCounter(mergedEntries)
+  }
+
+//  def compare(that: deltaGCounter): Boolean = {
+//    this.entries
+//      .zip(that.entries)
+//      .forall((tup: Tuple[Int, Int]) => tup.fst <= tup.snd)
+//  }
+}
+
+object deltaLexCounter extends CvRDTProof[deltaLexCounter]
