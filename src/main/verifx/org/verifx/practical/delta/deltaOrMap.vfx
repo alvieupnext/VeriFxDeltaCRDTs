@@ -1,0 +1,10 @@
+//import org.verifx.practical.delta.DotKernel.vfx
+//import org.verifx.practical.crdts.DeltaCRDT
+//import org.verifx.practical.crdts.CvRDTProof2
+//
+//class deltaOrMap[K, V, ID](map: Map[K, V], c: DotContext[ID]) extends DeltaCRDT[deltaOrMap] {
+//
+//    def erase(key: K) = {
+//        val res = new deltaOrMap(new Map[K, V])
+//    }
+//}
