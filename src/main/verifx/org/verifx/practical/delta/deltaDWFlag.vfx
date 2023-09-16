@@ -34,7 +34,7 @@ class deltaDWFlag[K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[deltaDW
     }
 
     // Method to join another deltaDWFlag instance with this instance. It joins the dot kernels of both instances.
-    def join(other: deltaDWFlag[K]): Unit = {
-        this.dk.join(other.dk)
+    def merge(other: deltaDWFlag[K]): Unit = {
+        this.dk.merge(other.dk)
     }
 }

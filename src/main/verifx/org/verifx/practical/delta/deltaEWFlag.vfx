@@ -40,7 +40,7 @@ class deltaEWFlag[K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[deltaEW
     }
 
     // Method to join another deltaEWFlag instance with this instance. It joins the dot kernels of both instances.
-    def join(other: deltaEWFlag[K]): Unit = {
-        this.dk.join(other.dk)
+    def merge(other: deltaEWFlag[K]): Unit = {
+        this.dk.merge(other.dk)
     }
 }
