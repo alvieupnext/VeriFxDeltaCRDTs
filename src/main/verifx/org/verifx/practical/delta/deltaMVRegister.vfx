@@ -1,0 +1,34 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.CvRDTProof
+
+///////////////////////////
+// Multi-Value Register //
+/////////////////////////
+
+class deltaMVRegister[V, K](dk: DotKernel[V, K], id: K) extends DeltaCRDT[deltaMVRegister[V, K]] {
+
+    def write(value: V): deltaMVRegister[V, K] = {
+        res = new deltaMVRegister[V, K]()
+        a = new deltaMVRegister[V, K]()
+        res.dk = this.dk.rmv()
+        a.dk = this.dk.add(this.id, val)
+        res.merge(a)
+        res
+    }
+
+    def read(): Set[V] = {
+        res = new Set[V]()
+        this.dk.ds.forall((k, v) => res.add(k.snd))
+        res
+    }
+
+    def reset(): deltaMVRegister[V, K] = {
+        res = new deltaMVRegister[V, K]()
+        res.dk = this.dk.rmv()
+        res
+    }
+
+    def merge(other: deltaMVRegister[V, K]): deltaMVRegister[V, K] = {
+        this.dk.merge(other.dk)
+    }
+}
