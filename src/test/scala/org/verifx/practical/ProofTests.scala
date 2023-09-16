@@ -26,12 +26,25 @@ class ProofTests extends FlatSpec with Prover {
 ////    prove(proof)
 //  }
 
-  "DotContext" should "be a CRDT" in {
-    val proof = ("DotContext", "is_a_CvRDT")
-//    val res = rejectForModel(proof)
-//    println(res.toString())
-        prove(proof)
+//    "deltaGMap" should "be a CRDT" in {
+//      val proof = ("deltaTwoPSet", "is_a_CvRDT")
+//      prove(proof)
+//    }
+
+  "RWLWWSet" should "be a CRDT" in {
+    val proof = ("RWLWWSet", "is_a_CvRDT")
+    val res = rejectForModel(proof)
+    println(res.toString())
+//    prove(proof)
   }
+
+
+  //  "DotContext" should "be a CRDT" in {
+//    val proof = ("DotContext", "is_a_CvRDT")
+////    val res = rejectForModel(proof)
+////    println(res.toString())
+//        prove(proof)
+//  }
 
 //  "PNCounter" should "be a CRDT" in {
 //    val proof = ("PNCounter", "is_a_CvRDT")
