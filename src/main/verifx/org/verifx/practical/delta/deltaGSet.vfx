@@ -1,0 +1,14 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.CvRDTProof
+import org.verifx.practical.crdts.CvRDTProof1
+
+class deltaGSet[V](set: Set[V] = new Set[V]()) extends DeltaCRDT[deltaGSet[V]] {
+  def add(element: V) = new deltaGSet(new Set[V]().add(element))
+  def lookup(element: V) = this.set.contains(element)
+  def merge(that: deltaGSet[V]) = new deltaGSet(this.set.union(that.set))
+
+  // Used by AddOnlyDag
+  def exists(f: V => Boolean) = this.set.exists(f)
+}
+
+object deltaGSet extends CvRDTProof1[deltaGSet]

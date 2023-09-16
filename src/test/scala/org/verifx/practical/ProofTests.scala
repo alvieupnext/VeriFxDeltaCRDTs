@@ -4,8 +4,13 @@ import org.verifx.practical.Prover
 import org.scalatest.FlatSpec
 
 class ProofTests extends FlatSpec with Prover {
-  "deltaGCounter" should "be a CRDT" in {
-    val proof = ("deltaGCounter", "is_a_CvRDT")
+//  "deltaGCounter" should "be a CRDT" in {
+//    val proof = ("deltaGCounter", "is_a_CvRDT")
+//    prove(proof)
+//  }
+
+  "deltaGSet" should "be a CRDT" in {
+    val proof = ("deltaGSet", "is_a_CvRDT")
     prove(proof)
   }
 
