@@ -1,9 +1,9 @@
 import org.verifx.practical.crdts.DeltaCRDT
 import org.verifx.practical.crdts.CvRDTProof
 
-/////////////////////////////
-// Delta Enable-Wins Flag //
-///////////////////////////
+//////////////////////////////
+// Delta Disable-Wins Flag //
+////////////////////////////
 
 // Define a class named deltaDWFlag with a type parameter K. It extends a DeltaCRDT with itself as the type parameter.
 class deltaDWFlag[K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[deltaDWFlag[K]] {
