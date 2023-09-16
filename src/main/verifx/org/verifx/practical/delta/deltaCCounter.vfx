@@ -1,0 +1,64 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.CvRDTProof
+
+///////////////////////////////////////
+// Causal Counter for Map Embedding //
+/////////////////////////////////////
+
+class deltaCCounter[V, K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[deltaCCounter[V, K]] {
+
+    def inc(): deltaCCounter[V, K] = {
+        val res = new deltaCCounter[V, K]()
+        val dots = new Set[Tuple[K, Int]]
+        val base: V
+        this.dk.ds.forall((k, v) => {
+            if (k.fst.fst == this.id) {
+                base = max(base, k.snd)
+                dots.add(k.first)
+            }
+            true
+        })
+        dots.forall((dot) => {
+            res.dk.merge(this.dk.rmv(dot))
+            true
+        })
+        res.dk.merge(this.dk.add(id, base + 1))
+    }
+
+    def dec(): deltaCCounter[V, K] = {
+        val res = new deltaCCounter[V, K]()
+        val dots = new Set[Tuple[K, Int]]
+        val base: V
+        this.dk.ds.forall((k, v) => {
+            if (k.fst.fst == this.id) {
+                base = max(base, k.snd)
+                dots.add(k.first)
+            }
+            true
+        })
+        dots.forall((dot) => {
+            res.dk.merge(this.dk.rmv(dot))
+            true
+        })
+        res.dk.merge(this.dk.add(id, base - 1))
+    }
+
+    def reset(): deltaCCounter[V, K] = {
+        val res = deltaCCounter[V, K]()
+        res.dk = this.dk.rmv()
+        res
+    }
+
+    def read(): V = {
+        val res: V
+        this.dk.ds.forall((k, v) => {
+            v += k.snd
+            true
+        })
+        res
+    }
+
+    def join(other: deltaCCounter[V, K]): Unit = {
+        this.dk.merge(other.dk)
+    }
+}

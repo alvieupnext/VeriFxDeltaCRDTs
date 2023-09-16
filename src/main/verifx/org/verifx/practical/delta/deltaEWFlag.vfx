@@ -1,0 +1,46 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.CvRDTProof
+
+/////////////////////////////
+// Delta Enable-Wins Flag //
+///////////////////////////
+
+// Define a class named deltaEWFlag with a type parameter K. It extends a DeltaCRDT with itself as the type parameter.
+class deltaEWFlag[K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[deltaEWFlag[K]] {
+
+    // Method to read the flag status. It returns true if the underlying data store (ds) is not empty,
+    // indicating the flag is enabled.
+    def read(): Boolean = {
+        !this.dk.ds.keys.isEmpty()
+    }
+
+    // Method to enable the flag. It creates a new instance of deltaEWFlag and joins the current dot kernel
+    // with a new dot kernel created by adding a new dot with the value true.
+    def enable(): deltaEWFlag[K] = {
+        val res = new deltaEWFlag[K]()
+        res.dk = this.dk.rmv(true) // optimization that first deletes active dots
+        res.dk.join(this.dk.add(id, true))
+        res
+    }
+
+    // Method to disable the flag. It creates a new instance of deltaEWFlag and sets its dot kernel to the result
+    // of removing the true value from the current dot kernel.
+    def disable(): deltaEWFlag[K] = {
+        val res = new deltaEWFlag[K]()
+        res.dk = this.dk.rmv(true)
+        res
+    }
+
+    // Method to reset the flag. It creates a new instance of deltaEWFlag and sets its dot kernel to the result
+    // of removing all values from the current dot kernel.
+    def reset(): deltaEWFlag[K] = {
+        val res = new deltaEWFlag[K]()
+        res.dk = this.dk.rmv()
+        res
+    }
+
+    // Method to join another deltaEWFlag instance with this instance. It joins the dot kernels of both instances.
+    def merge(other: deltaEWFlag[K]): Unit = {
+        this.dk.merge(other.dk)
+    }
+}

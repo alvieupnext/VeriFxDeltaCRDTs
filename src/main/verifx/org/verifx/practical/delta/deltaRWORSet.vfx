@@ -1,0 +1,39 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.CvRDTProof
+
+///////////////////////////////////////
+// Remove Wins Observed Removed Set //
+/////////////////////////////////////
+
+class deltaRWORSet[Tuple[E, Boolean], K](dk: DotKernel[E, K], id: K) extends DeltaCRDT[deltaRWORSet[Tuple[E, Boolean], K]] {
+
+    def read(): Set[E] = {
+        val res = new Set[E]()
+        // TODO
+    }
+
+    def add(e: E): deltaRWORSet[Tuple[E, Boolean], K] = {
+        val res = new deltaRWORSet[Tuple[E, Boolean], K]()
+        res.dk = this.dk.rmv(new Tuple[E, Boolean](e, true)) // Remove any observed add token
+        res.dk.merge(this.dk.rmv(new Tuple[E, Boolean](e, false)) // Remove any observed remove token
+        res.dk.merge(this.dk.add(id, new Tuple[E, Boolean](e, true)))
+        res
+    }
+
+    def rmv(e: E): deltaRWORSet[Tuple[E, Boolean], K] = {
+        val res = new deltaRWORSet[Tuple[E, Boolean], K]()
+        res.dk = this.dk.rmv(new Tuple[E, Boolean](e, true)) // Remove any observed add token
+        res.dk.merge(this.dk.rmv(new Tuple[E, Boolean](e, false))) // Remove any observed remove token
+        res.dk.merge(this.dk.add(id, new Tuple[E, Boolean](e, false)))
+    }
+
+    def reset(): deltaRWORSet[Tuple[E, Boolean], K] = {
+        val res = new deltaRWORSet[Tuple[E, Boolean], K]()
+        res.dk = this.dk.rmv()
+        res
+    }
+
+    def merge(other: deltaRWORSet[Tuple[E, Boolean], K]): Unit = {
+        this.dk.merge(other.dk)
+    }
+}
