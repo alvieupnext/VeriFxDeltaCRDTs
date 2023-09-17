@@ -4,7 +4,7 @@ import org.verifx.practical.crdts.CvRDTProof
 import org.verifx.practical.delta.deltaGCounter
 
 // Exercise 1: Implement a PN-Counter as a composition of two G-Counters
-class deltaPNCounter(p: deltaGCounter, n: deltaGCounter) extends DeltaCRDT[deltaPNCounter] {
+class deltaPNCounter(p: deltaGCounter = new deltaGCounter(), n: deltaGCounter = new deltaGCounter()) extends DeltaCRDT[deltaPNCounter] {
   def value() = this.p.value() - this.n.value()
 
   def increment(replica: Int) =

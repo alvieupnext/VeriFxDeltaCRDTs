@@ -5,7 +5,7 @@ import org.verifx.practical.crdts.CvRDTProof
 // Delta increment-only Counter //
 /////////////////////////////////
 
-class deltaGCounter(entries: Vector[Int]) extends DeltaCRDT[deltaGCounter] {
+class deltaGCounter(entries: Vector[Int] = new Vector[Int]()) extends DeltaCRDT[deltaGCounter] {
   def increment(replica: Int) = {
     val count = this.entries.get(replica)
     new deltaGCounter(new Vector[Int]().write(replica, count + 1))

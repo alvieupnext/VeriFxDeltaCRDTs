@@ -11,7 +11,7 @@ class deltaMVRegister[V, K](dk: DotKernel[V, K], id: K) extends DeltaCRDT[deltaM
         res = new deltaMVRegister[V, K]()
         a = new deltaMVRegister[V, K]()
         res.dk = this.dk.rmv()
-        a.dk = this.dk.add(this.id, val)
+        a.dk = this.dk.add(this.id, value)
         res.merge(a)
         res
     }

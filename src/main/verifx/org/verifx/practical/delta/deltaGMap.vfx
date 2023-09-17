@@ -1,16 +1,18 @@
 import org.verifx.practical.crdts.DeltaCRDT
 import org.verifx.practical.crdts.CvRDTProof2
 
-class deltaGMap[K, V](map: Map[K, V]) extends DeltaCRDT[deltaGMap[K, V]] {
+class deltaGMap[K, V](map: Map[K, V] = new Map[K,V]()) extends DeltaCRDT[deltaGMap[K, V]] {
     def add(key: K, value: V) = {
       val res = new Map[K, V]()
       res.add(key, value)
       new deltaGMap(res)
     }
-    def lookup(key: K) = this.map.contains(element)
+    def lookup(key: K) = this.map.contains(key)
+
+    def get(key: K) = this.map.get(key)
 
     //Placeholder combine
-    def merge(that: deltaGMap[K, V]) = new deltaGMap(this.map.combine(that, (v1, v2) => v1))
+    def merge(that: deltaGMap[K, V]) = new deltaGMap(this.map.combine(that.map, (v1: V, v2: V) => v1))
 
 }
 

@@ -10,7 +10,7 @@ class deltaCCounter[V, K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[de
     def inc(): deltaCCounter[V, K] = {
         val res = new deltaCCounter[V, K]()
         val dots = new Set[Tuple[K, Int]]
-        val base: V
+        val base = new V
         this.dk.ds.forall((k, v) => {
             if (k.fst.fst == this.id) {
                 base = max(base, k.snd)
@@ -28,7 +28,7 @@ class deltaCCounter[V, K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[de
     def dec(): deltaCCounter[V, K] = {
         val res = new deltaCCounter[V, K]()
         val dots = new Set[Tuple[K, Int]]
-        val base: V
+        val base = new V
         this.dk.ds.forall((k, v) => {
             if (k.fst.fst == this.id) {
                 base = max(base, k.snd)
@@ -50,7 +50,7 @@ class deltaCCounter[V, K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[de
     }
 
     def read(): V = {
-        val res: V
+        val res = new V
         this.dk.ds.forall((k, v) => {
             v += k.snd
             true
