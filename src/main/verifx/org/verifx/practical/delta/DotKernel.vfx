@@ -1,11 +1,9 @@
 import org.verifx.practical.crdts.DeltaCRDT
-import org.verifx.practical.crdts.DotKernelCRDT
 import org.verifx.practical.crdts.CvRDTProof2
 import org.verifx.practical.crdts.CvRDTProof1
 
 
 class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[DotContext[K]] {
-
 
     override def reachable(): Boolean = {
         //dots cannot be negative
@@ -67,22 +65,67 @@ class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends Delta
          val secondCond = dsDots.forall((v: Tuple[K, Int]) => v.snd >= 0)
          firstCond && secondCond
        }
-    def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
-        val thisKeys = this.ds.keys()
-        val otherKeys = other.ds.keys()
-        val bothKeys = thisKeys.intersect(otherKeys)
-        val onlyThisKeys = thisKeys.diff(bothKeys)
-        val onlyOtherKeys = otherKeys.diff(bothKeys)
-        val onlyThisKeysKnownByOtherC = onlyThisKeys.filter((k: Tuple[K, Int]) => other.c.dotIn(k))
-        val onlyOtherKeysNotKnownByOurC = onlyOtherKeys.filter((k: Tuple[K, Int]) => !this.c.dotIn(k))
-        //remove all keys known by the other c from the new ds (started from the our ds
-        val newds = this.ds.filter((key: Tuple[K, Int], value: T) => !onlyThisKeysKnownByOtherC.contains(key))
-        //only keep the map values known by our c
-        val onlyOtherKeyValues = other.ds.filter((key: Tuple[K, Int], value: T) => onlyOtherKeysNotKnownByOurC.contains(key))
-        //from the two values, get the second one as preference, since that one should override the first one
-        val mergedDs = newds.combine(onlyOtherKeyValues, (v1: T, v2: T) => v2)
-        val res = new DotKernel[K, T](newds, this.c.merge(other.c))
+
+//    def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
+//        val thisKeys = this.ds.keys()
+//        val otherKeys = other.ds.keys()
+//        val bothKeys = thisKeys.intersect(otherKeys)
+//        val onlyThisKeys = thisKeys.diff(bothKeys)
+//        val onlyOtherKeys = otherKeys.diff(bothKeys)
+//        val onlyThisKeysKnownByOtherC = onlyThisKeys.filter((k: Tuple[K, Int]) => other.c.dotIn(k))
+//        val onlyOtherKeysNotKnownByOurC = onlyOtherKeys.filter((k: Tuple[K, Int]) => !this.c.dotIn(k))
+//        //remove all keys known by the other c from the new ds (started from the our ds
+//        val newds = this.ds.filter((key: Tuple[K, Int], value: T) => !onlyThisKeysKnownByOtherC.contains(key))
+//        //only keep the map values known by our c
+//        val onlyOtherKeyValues = other.ds.filter((key: Tuple[K, Int], value: T) => onlyOtherKeysNotKnownByOurC.contains(key))
+//        //from the two values, get the second one as preference, since that one should override the first one
+//        val mergedDs = newds.combine(onlyOtherKeyValues, (v1: T, v2: T) => v2)
+//        val res = new DotKernel[K, T](newds, this.c.merge(other.c))
+//        res
+//    }
+
+    def DSToList(ds: Map[Tuple[K, Int], T]): LList[Tuple[Tuple[K, Int], T]] = {
+        val res = new LList[Tuple[Tuple[K, Int], T]]()
+        ds.forall((k: Tuple[K, Int], v: T) => {
+            res.insert(0, new Tuple[Tuple[K, Int], T](k, v))
+            true
+        })
         res
+    }
+
+    @recursive
+    def mergeDSs(thisDS: LList[Tuple[Tuple[K, Int], T]], otherDS: LList[Tuple[Tuple[K, Int], T]],
+     thisPos: Int, otherPos: Int, res: Map[Tuple[K, Int], T], oc: DotContext[K]): Map[Tuple[K, Int], T] = {
+        if (!(thisPos == thisDS.size && otherPos == otherDS.size)) { // while not at the end of both sequences
+            val thisCurEl = thisDS.get(thisPos)
+            val otherCurEl = otherDS.get(otherPos)
+            // tow dots are smaller if the timestamp is smaller
+            if (thisPos != thisDS.size && (otherPos == otherDS.size || thisCurEl.fst.snd < otherCurEl.fst.snd)) {
+                if (oc.dotIn(thisCurEl.fst)) { // other knows dot, must delete here
+                    res.remove(thisCurEl.fst)
+                    this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos, res, oc)
+                } else {
+                    this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos, res, oc)
+                }
+            } else if (otherPos != otherDS.size && (thisPos == thisDS.size || otherCurEl.fst.snd < thisCurEl.fst.snd)) {
+                if (!this.c.dotIn(otherCurEl.fst)) {
+                    res.add(otherCurEl.fst, otherCurEl.snd)
+                    this.mergeDSs(thisDS, otherDS, thisPos, otherPos + 1, res, oc)
+                } else {
+                    this.mergeDSs(thisDS, otherDS, thisPos, otherPos + 1, res, oc)
+                }
+            } else {
+                this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos + 1, res, oc)
+            }
+        } else res
+    }
+
+    def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
+        val thisDSlist = this.DSToList(this.ds)
+        val otherDSlist = this.DSToList(other.ds)
+        val DSres = this.mergeDSs(thisDSlist, otherDSlist, 0, 0, this.ds, other.c)
+        val Cres = this.c.merge(other.c)
+        new DotKernel(DSres, Cres)
     }
 
     def add(id: K, value: T): DotKernel[K, T] = {
