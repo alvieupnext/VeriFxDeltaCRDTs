@@ -4,6 +4,7 @@ import org.verifx.practical.delta.deltaPNCounter
 
 import org.verifx.practical.crdts.CvRDTProof1
 
+//K must be comparable
 //V from the C++ paper is now assumed to be an Int
 class deltaBCounter[K](c: deltaPNCounter, map: deltaGMap[Tuple[K, K], Int], id: K) extends DeltaCRDT[deltaBCounter[K]] {
     def inc(toSum: Int): deltaBCounter[K] = {
