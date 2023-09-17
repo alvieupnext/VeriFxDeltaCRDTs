@@ -16,11 +16,12 @@ class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[D
        }
 
     def dotIn(d: Tuple[K, Int]): Boolean = {
-        if (this.cc.contains(d.fst) && (d.snd <= this.cc.get(d.fst))) {
-            true
-        } else if (this.dc.contains(d)) {
-            true
-        } else false
+        this.dc.contains(d)
+//        if (this.cc.contains(d.fst) && d.snd <= this.cc.get(d.fst)) {
+//            true
+//        } else if (this.dc.contains(d)) {
+//            true
+//        } else false
     }
 
      def makeDot(id: K): Tuple[K, Int] = {
@@ -80,7 +81,7 @@ class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends Delta
         val onlyOtherKeyValues = other.ds.filter((key: Tuple[K, Int], value: T) => onlyOtherKeysNotKnownByOurC.contains(key))
         //from the two values, get the second one as preference, since that one should override the first one
         val mergedDs = newds.combine(onlyOtherKeyValues, (v1: T, v2: T) => v2)
-        val res = new DotKernel[K, T](newds, this.c.join(other.c))
+        val res = new DotKernel[K, T](newds, this.c.merge(other.c))
         res
     }
 

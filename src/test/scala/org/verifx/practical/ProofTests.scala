@@ -52,7 +52,7 @@ class ProofTests extends FlatSpec with Prover {
 //          prove(proof)
     }
 
-  //  "DotContext" should "be a CRDT" in {
+//    "DotContext" should "be a CRDT" in {
 //    val proof = ("DotContext", "is_a_CvRDT")
 ////    val res = rejectForModel(proof)
 ////    println(res.toString())
