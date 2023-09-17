@@ -1,9 +1,19 @@
 import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.DotKernelCRDT
 import org.verifx.practical.crdts.CvRDTProof2
 import org.verifx.practical.crdts.CvRDTProof1
 
 
 class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[DotContext[K]] {
+
+
+    override def reachable(): Boolean = {
+        //dots cannot be negative
+        val ccValues = this.cc.values()
+        val ccCondition = ccValues.forall((v: Int) => v >= 0)
+        val dcCondition = this.dc.forall((t: Tuple[K, Int]) => t.snd >= 0)
+        ccCondition && dcCondition
+       }
 
     def dotIn(d: Tuple[K, Int]): Boolean = {
         if (this.cc.contains(d.fst) && (d.snd <= this.cc.get(d.fst))) {
@@ -47,6 +57,15 @@ class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[D
 }
 
 class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends DeltaCRDT[DotKernel[K, T]] {
+    override def reachable(): Boolean = {
+         val dsDots = this.ds.keys()
+         //every dot in the dot map needs to be present in the causal context
+         //check whether every single dot in the dsDots is present in the Causal Context
+         val firstCond = dsDots.forall((v: Tuple[K, Int]) => this.c.dotIn(v))
+         //dots can never have a negative integer
+         val secondCond = dsDots.forall((v: Tuple[K, Int]) => v.snd >= 0)
+         firstCond && secondCond
+       }
     def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
         val thisKeys = this.ds.keys()
         val otherKeys = other.ds.keys()
