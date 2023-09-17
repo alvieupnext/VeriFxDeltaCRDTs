@@ -45,7 +45,7 @@ class deltaORSeq[T, I](l: LList[Tuple[Int, Tuple[Tuple[I, Int], T]]], c: DotCont
         val res = new deltaORSeq[T, I]() // result to store delta
         val dot = this.c.makeDot(this.id) // create new dot
         // create payload to insert into local list
-        val toInsert = new Tuple[Int, Tuple[Tuple[I, Int], T]](pos, new Tuple[[Tuple[I, Int], T]](dot, e))
+        val toInsert = new Tuple[Int, Tuple[Tuple[I, Int], T]](pos, new Tuple[Tuple[I, Int], T](dot, e))
         this.l.insert(pos, toInsert) // insert in local sequence
         // create delta to propagate change
         res.c.insertDot(dot)
@@ -67,9 +67,9 @@ class deltaORSeq[T, I](l: LList[Tuple[Int, Tuple[Tuple[I, Int], T]]], c: DotCont
     }
 
     @recursive
-    private def mergeSequences(thisSeq: LList[Int, Tuple[Tuple[I, Int], T]]], otherSeq: LList[Int, Tuple[Tuple[I, Int], T]]],
-     thisPos: Int, otherPos: Int, e: Tuple[Int, I], eo: Tuple[Int, I], other: deltaORSeq[T, I])): Unit = {
-        if (!(thisPos == thisSeq.size && otherPos == otherSeq.size))) { // while not at the end of both sequences
+    private def mergeSequences(thisSeq: LList[Int, Tuple[Tuple[I, Int], T]], otherSeq: LList[Int, Tuple[Tuple[I, Int], T]],
+     thisPos: Int, otherPos: Int, e: Tuple[Int, I], eo: Tuple[Int, I], other: deltaORSeq[T, I]): Unit = {
+        if (!(thisPos == thisSeq.size && otherPos == otherSeq.size)) { // while not at the end of both sequences
             // Get current elements for this iteration in both sequences
             val thisElement = thisSeq.get(thisPos)
             val otherElement = otherSeq.get(otherPos)
