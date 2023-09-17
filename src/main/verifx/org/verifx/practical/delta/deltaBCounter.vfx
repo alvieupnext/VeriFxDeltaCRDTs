@@ -1,0 +1,53 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.delta.deltaGMap
+import org.verifx.practical.delta.deltaPNCounter
+
+import org.verifx.practical.crdts.CvRDTProof1
+
+//V from the C++ paper is now assumed to be an Int
+class deltaBCounter[K](c: deltaPNCounter, map: deltaGMap[Tuple[K, K], Int], id: K) extends DeltaCRDT[deltaBCounter[K]] {
+    def inc(toSum: Int): deltaBCounter[K] = {
+        //increment local counter
+        this.c.increment(toSum)
+        val res = new deltaBCounter[K](this.c, new deltaGMap[Tuple[K, K], Int](), this.id)
+        res
+    }
+
+    def dec(toDec: Int): deltaBCounter[K] = {
+        val res = new deltaBCounter[K](new deltaPNCounter(), new deltaGMap[Tuple[K, K], Int](), this.id)
+
+        //get value from deltaPNCounter
+        this.c.decrement(toDec)
+        val res = new deltaBCounter[K](this.c, new deltaGMap[Tuple[K, K], Int](), this.id)
+
+        //if value is smaller than the local capacity
+//        if (value <= local){
+//        }
+        res
+    }
+
+    def value() = this.c.value()
+
+    def mv(q: Int, to: K): deltaBCounter[K] = {
+        val res = new deltaBCounter[K](new deltaPNCounter, new deltaGMap[Tuple[K, K], Int](), this.id)
+//        if (value <= local){
+        //tuple from id to to
+        val tuple = new Tuple[K, K](this.id, to)
+        //get value from the id to the replica
+        val value = this.map.get(tuple)
+        //add q to the value
+        this.map.add(tuple, q + value)
+        //copy mutation to the res
+        res.map.add(tuple, q + value)
+        res
+//        }
+        }
+
+    def merge(that: deltaBCounter[K]): deltaBCounter[K] = {
+        new deltaBCounter[K](this.c.merge(that.c), this.map.merge(that.map), this.id)
+    }
+
+
+    }
+
+object deltaBCounter extends CvRDTProof1[deltaBCounter]
