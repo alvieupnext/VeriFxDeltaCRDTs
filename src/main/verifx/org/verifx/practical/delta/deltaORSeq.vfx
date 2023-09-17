@@ -1,0 +1,109 @@
+import org.verifx.practical.crdts.DeltaCRDT
+import org.verifx.practical.crdts.CvRDTProof
+
+//////////////////////////////////////////////////////
+// A Causal Sequence Prototype Inspired by Treedoc //
+////////////////////////////////////////////////////
+
+class deltaORSeq[T, I](l: LList[Tuple[Int, Tuple[Tuple[I, Int], T]]], c: DotContext[I], id: I) extends DeltaCRDT[deltaORSeq[T, I]] {
+    // l: List elements are: (position,dot,payload)
+
+    def begin(): Tuple[Vector[Boolean], Tuple[Tuple[I, Int], T]] = {
+        this.l.get(0)
+    }
+
+    def end(): Tuple[Vector[Boolean], Tuple[Tuple[I, Int], T]] = {
+        this.l.get(this.l.size - 1)
+    }
+
+    def erase(toErase: LList[Tuple[Int, Tuple[Tuple[I, Int], T]]]): deltaORSeq[T, I] = {
+        val res = new deltaORSeq[T, I]()
+        toErase.forall(toDel => {
+            res.c.insertDot(toDel.snd.fst)
+            val pos = 0
+            this.l.forall(e => {
+                if (e == toDel) { this.l.delete(pos) }
+                pos += 1
+                true
+            })
+            true
+        })
+        res
+    }
+
+    def reset(): deltaORSeq[T, I] = {
+        val res = new deltaORSeq[T, I]()
+        this.l.forall(e => {
+            res.c.insertDot(e.snd.fst)
+            true
+        })
+        this.l = new LList[Tuple[Int, Tuple[Tuple[I, Int], T]]]() // clear the local sequence
+        res
+    }
+
+    def insert(pos: Int, e: T): deltaORSeq[T, I] = {
+        val res = new deltaORSeq[T, I]() // result to store delta
+        val dot = this.c.makeDot(this.id) // create new dot
+        // create payload to insert into local list
+        val toInsert = new Tuple[Int, Tuple[Tuple[I, Int], T]](pos, new Tuple[[Tuple[I, Int], T]](dot, e))
+        this.l.insert(pos, toInsert) // insert in local sequence
+        // create delta to propagate change
+        res.c.insertDot(dot)
+        res.l.insert(pos, toInsert)
+        res
+    }
+
+    private def deleteElementFromList(l: LList[Tuple[Int, Tuple[Tuple[I, Int], T]]],
+     e: Tuple[Int, Tuple[Tuple[I, Int], T]]): LList[Tuple[Int, Tuple[Tuple[I, Int], T]]] = {
+        val idx = 0
+        l.forall((currElement) => {
+            if (currElement == e) {
+                l.delete(idx)
+            }
+            idx++
+            true
+        })
+        l
+    }
+
+    @recursive
+    private def mergeSequences(thisSeq: LList[Int, Tuple[Tuple[I, Int], T]]], otherSeq: LList[Int, Tuple[Tuple[I, Int], T]]],
+     thisPos: Int, otherPos: Int, e: Tuple[Int, I], eo: Tuple[Int, I], other: deltaORSeq[T, I])): Unit = {
+        if (!(thisPos == thisSeq.size && otherPos == otherSeq.size))) { // while not at the end of both sequences
+            // Get current elements for this iteration in both sequences
+            val thisElement = thisSeq.get(thisPos)
+            val otherElement = otherSeq.get(otherPos)
+            if (thisPos != thisSeq.size - 1) {
+                e.fst = thisElement.fst
+                e.snd = thisElement.snd.fst.fst
+            }
+            if (otherPos != otherSeq.size - 1) {
+                eo.fst = otherElement.fst
+                eo.snd = otherElement.snd.fst.fst
+            }
+            if (thisPos != thisSeq.size - 1 && (otherPos == otherSeq.size - 1 || e < eo)) {
+                val currentDot = thisElement.snd.fst
+                if (other.c.dotIn(currentDot)) { // other knows dot, must delete here
+                    this.l = deleteElementFromList(this.l, currentDot)
+                    mergeSequences(thisSeq, otherSeq, thisPos + 1, otherPos, e, eo, other)
+                } else { // keep it
+                    mergeSequences(thisSeq, otherSeq, thisPos + 1, otherPos, e, eo, other)
+                }
+            } else if (otherPos != otherSeq.size - 1 && (thisPos == thisSeq.size - 1 || eo < e)) {
+                val currentDot = otherElement.snd.fst
+                if (!this.c.dotIn(currentDot)) { // Import dot if we don't know it
+                this.l.insert(currentDot)
+                }
+                mergeSequences(thisSeq, otherSeq, thisPos, otherPos + 1, e, eo, other)
+            } else if (thisPos != thisSeq.size - 1 && otherPos != otherSeq.size - 1) {
+                mergeSequences(thisSeq, otherSeq, thisPos + 1, otherPos + 1, e, eo, other)
+            }
+        }
+    }
+
+    def merge(other: deltaORSeq[T, I]): Unit = {
+        mergeSequences(this.l, other.l, 0, 0, new Tuple[Int, I](), new Tuple[Int, I](), other)
+        // Join dot contexts
+        this.c.join(other.c)
+    }
+}
