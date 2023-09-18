@@ -5,13 +5,52 @@ import org.verifx.practical.crdts.CvRDTProof1
 
 class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[DotContext[K]] {
 
+    @recursive
+    private def checkAscendingDots(key: K, dots: Set[Tuple[K, Int]], counter: Int, amountOfDots: Int): Boolean = {
+        if (counter > amountOfDots) {
+            true
+        } else if (dots.contains(new Tuple[K, Int](key, counter))) {
+             this.checkAscendingDots(key, dots, counter + 1, amountOfDots)}
+             else false
+        }
+
+    private def checkDotValidity(key: K): Boolean = {
+        //get all dots from dc that contain the key
+        val dotsInSet = this.dc.filter((tpl: Tuple[K, Int]) => tpl.fst == key)
+        //get latest update from cc
+        val amountOfDots = this.cc.getOrElse(key, 0)
+        if (amountOfDots != 0) {
+            this.checkAscendingDots(key, this.dc, 1, amountOfDots)
+            }
+        else false
+    }
+
     override def reachable(): Boolean = {
         //dots cannot be negative
+//        val ccValues = this.cc.values()
+//        val ccCondition = ccValues.forall((v: Int) => v >= 0)
+//        val dcCondition = this.dc.forall((t: Tuple[K, Int]) => t.snd >= 0)
+//        ccCondition && dcCondition
+        //get all keys from cc and dc
+        val ccKeys = this.cc.keys()
+        //all values must be positive and not 0
         val ccValues = this.cc.values()
         val ccCondition = ccValues.forall((v: Int) => v >= 0)
         val dcCondition = this.dc.forall((t: Tuple[K, Int]) => t.snd >= 0)
-        ccCondition && dcCondition
-       }
+        val dcKeys = this.dc.map[K]((tuple: Tuple[K, Int]) => tuple.fst)
+        //get the difference between ccKeys and dcKeys (if the difference is empty, cc and dc have the same keys)
+        val diff = ccKeys.diff(dcKeys)
+        val diff2 = dcKeys.diff(ccKeys)
+        //if the difference isn't empty (inconsistent keys) return false
+//        if (diff.isEmpty()) {
+//            //all dots in cc must be represented in dc as a set with an integer that sums +1 until the value of the dot in cc
+//
+//        } else false
+//          this.cc.bijective()
+        ccCondition && dcCondition && diff.isEmpty() && diff2.isEmpty() && ccKeys.forall((key: K) => {
+                                          this.checkDotValidity(key)
+                                          })}
+//}
 
     def dotIn(d: Tuple[K, Int]): Boolean = {
         this.dc.contains(d)
@@ -57,13 +96,14 @@ class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[D
 
 class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends DeltaCRDT[DotKernel[K, T]] {
     override def reachable(): Boolean = {
+        val validContext = this.c.reachable()
          val dsDots = this.ds.keys()
          //every dot in the dot map needs to be present in the causal context
          //check whether every single dot in the dsDots is present in the Causal Context
          val firstCond = dsDots.forall((v: Tuple[K, Int]) => this.c.dotIn(v))
          //dots can never have a negative integer
          val secondCond = dsDots.forall((v: Tuple[K, Int]) => v.snd >= 0)
-         firstCond && secondCond
+         validContext && firstCond && secondCond
        }
 
 //    def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
