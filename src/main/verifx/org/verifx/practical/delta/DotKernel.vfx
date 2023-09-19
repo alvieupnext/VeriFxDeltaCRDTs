@@ -123,58 +123,76 @@ class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends Delta
 //        val res = new DotKernel[K, T](newds, this.c.merge(other.c))
 //        res
 //    }
-
-    def DSToList(ds: Map[Tuple[K, Int], T]): LList[Tuple[Tuple[K, Int], T]] = {
-        val res = new LList[Tuple[Tuple[K, Int], T]]()
-        ds.forall((k: Tuple[K, Int], v: T) => {
-            res.insert(0, new Tuple[Tuple[K, Int], T](k, v))
-            true
-        })
+    def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
+        //merge the data stores with common dots
+        val commonDots = this.ds.zip(other.ds)
+        //values of the new map are tuples of values so change it to return one value
+        val commonDS = commonDots.map((key: Tuple[K, Int], value: Tuple[T, T]) => value.fst)
+        //values
+        val myDotsNotInOtherContext = this.ds.filter((key: Tuple[K, Int], value: T) => !other.c.dotIn(key))
+        val otherDotsNotInMyContext = other.ds.filter((key: Tuple[K, Int], value: T) => !this.c.dotIn(key))
+        //Dots to add
+        val dotsToAdd = myDotsNotInOtherContext.combine(otherDotsNotInMyContext, (v1: T, v2:T) => v1)
+        val newds = commonDS.combine(dotsToAdd, (v1: T, v2:T) => v1)
+        val res = new DotKernel[K, T](newds, this.c.merge(other.c))
         res
     }
 
-    @recursive
-    def mergeDSs(thisDS: LList[Tuple[Tuple[K, Int], T]], otherDS: LList[Tuple[Tuple[K, Int], T]],
-     thisPos: Int, otherPos: Int, res: Map[Tuple[K, Int], T], oc: DotContext[K]): Map[Tuple[K, Int], T] = {
-        if (!(thisPos == thisDS.size && otherPos == otherDS.size)) { // while not at the end of both sequences
-            val thisCurEl = thisDS.get(thisPos)
-            val otherCurEl = otherDS.get(otherPos)
-            // tow dots are smaller if the timestamp is smaller
-            if (thisPos != thisDS.size && (otherPos == otherDS.size || thisCurEl.fst.snd < otherCurEl.fst.snd)) {
-                if (oc.dotIn(thisCurEl.fst)) { // other knows dot, must delete here
-                    res.remove(thisCurEl.fst)
-                    this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos, res, oc)
-                } else {
-                    this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos, res, oc)
-                }
-            } else if (otherPos != otherDS.size && (thisPos == thisDS.size || otherCurEl.fst.snd < thisCurEl.fst.snd)) {
-                if (!this.c.dotIn(otherCurEl.fst)) {
-                    res.add(otherCurEl.fst, otherCurEl.snd)
-                    this.mergeDSs(thisDS, otherDS, thisPos, otherPos + 1, res, oc)
-                } else {
-                    this.mergeDSs(thisDS, otherDS, thisPos, otherPos + 1, res, oc)
-                }
-            } else {
-                this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos + 1, res, oc)
-            }
-        } else res
-    }
 
-    def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
-        val thisDSlist = this.DSToList(this.ds)
-        val otherDSlist = this.DSToList(other.ds)
-        val DSres = this.mergeDSs(thisDSlist, otherDSlist, 0, 0, this.ds, other.c)
-        val Cres = this.c.merge(other.c)
-        new DotKernel(DSres, Cres)
-    }
+//    def DSToList(ds: Map[Tuple[K, Int], T]): LList[Tuple[Tuple[K, Int], T]] = {
+//        val res = new LList[Tuple[Tuple[K, Int], T]]()
+//        ds.forall((k: Tuple[K, Int], v: T) => {
+//            res.insert(0, new Tuple[Tuple[K, Int], T](k, v))
+//            true
+//        })
+//        res
+//    }
+//
+//    @recursive
+//    def mergeDSs(thisDS: LList[Tuple[Tuple[K, Int], T]], otherDS: LList[Tuple[Tuple[K, Int], T]],
+//     thisPos: Int, otherPos: Int, res: Map[Tuple[K, Int], T], oc: DotContext[K]): Map[Tuple[K, Int], T] = {
+//        if (!(thisPos == thisDS.size && otherPos == otherDS.size)) { // while not at the end of both sequences
+//            val thisCurEl = thisDS.get(thisPos)
+//            val otherCurEl = otherDS.get(otherPos)
+//            // tow dots are smaller if the timestamp is smaller
+//            if (thisPos != thisDS.size && (otherPos == otherDS.size || thisCurEl.fst.snd < otherCurEl.fst.snd)) {
+//                if (oc.dotIn(thisCurEl.fst)) { // other knows dot, must delete here
+//                    res.remove(thisCurEl.fst)
+//                    this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos, res, oc)
+//                } else {
+//                    this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos, res, oc)
+//                }
+//            } else if (otherPos != otherDS.size && (thisPos == thisDS.size || otherCurEl.fst.snd < thisCurEl.fst.snd)) {
+//                if (!this.c.dotIn(otherCurEl.fst)) {
+//                    res.add(otherCurEl.fst, otherCurEl.snd)
+//                    this.mergeDSs(thisDS, otherDS, thisPos, otherPos + 1, res, oc)
+//                } else {
+//                    this.mergeDSs(thisDS, otherDS, thisPos, otherPos + 1, res, oc)
+//                }
+//            } else {
+//                this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos + 1, res, oc)
+//            }
+//        } else res
+//    }
+//
+//    def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
+//        val thisDSlist = this.DSToList(this.ds)
+//        val otherDSlist = this.DSToList(other.ds)
+//        val DSres = this.mergeDSs(thisDSlist, otherDSlist, 0, 0, this.ds, other.c)
+//        val Cres = this.c.merge(other.c)
+//        new DotKernel(DSres, Cres)
+//    }
 
     def add(id: K, value: T): DotKernel[K, T] = {
         val dot = this.c.makeDot(id)
+        this.c.insertDot(dot)
         this.ds.add(dot, value)
-        val res = new DotKernel[K, T](new Map[Tuple[K, Int], T](), new DotContext[K](new Map[K, Int](), new Set[Tuple[K, Int]]()))
-        res.ds.add(dot, value)
-        res.c.insertDot(dot)
-        res
+        val map = new Map[Tuple[K, Int], T]()
+        map.add(dot, value)
+        val context = new DotContext[K](new Map[K, Int](), new Set[Tuple[K, Int]]())
+        context.insertDot(dot)
+        context.cc.add(dot.fst, dot.snd)
+        new DotKernel[K, T](map, context)
     }
 
     def rmv(dot: Tuple[K, Int]): DotKernel[K, T] = {
