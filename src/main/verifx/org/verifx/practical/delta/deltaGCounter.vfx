@@ -5,12 +5,16 @@ import org.verifx.practical.crdts.CvRDTProof
 // Delta increment-only Counter //
 /////////////////////////////////
 
+// The state maps replica ID's to integers representing counters
 class deltaGCounter(entries: Vector[Int] = new Vector[Int]()) extends DeltaCRDT[deltaGCounter] {
+
+  // Increment only increments the entry for this replica
   def increment(replica: Int) = {
     val count = this.entries.get(replica)
-    new deltaGCounter(new Vector[Int]().write(replica, count + 1))
+    new deltaGCounter(new Vector[Int]().write(replica, count + 1)) // delta
   }
 
+  // Value is recursively computed by summing each of the replica's counters
   @recursive
   private def computeValue(sum: Int = 0, replica: Int = 0): Int = {
     if (replica >= 0 && replica < this.entries.size) {
@@ -25,6 +29,7 @@ class deltaGCounter(entries: Vector[Int] = new Vector[Int]()) extends DeltaCRDT[
 
   private def max(t: Tuple[Int, Int]) = if (t.fst >= t.snd) t.fst else t.snd
 
+  // Merge is a pointwise maximum between the entries of both GCounters
   def merge(that: deltaGCounter): deltaGCounter = {
     val mergedEntries = this.entries.zip(that.entries).map(this.max _)
     new deltaGCounter(mergedEntries)
