@@ -1,11 +1,24 @@
 import org.verifx.practical.crdts.DeltaCRDT
 import org.verifx.practical.crdts.CvRDTProof1
 
-class deltaTwoPSet[V](added: Set[V] = new Set[V](), removed: Set[V] = new Set[V]()) extends DeltaCRDT[deltaTwoPSet[V]] {
-  def lookup(element: V) = this.added.contains(element) && !this.removed.contains(element)
-  def add(element: V) = new deltaTwoPSet(new Set[V]().add(element), new Set[V]())
-  def remove(element: V) = new deltaTwoPSet(new Set[V](), new Set[V]().add(element))
+////////////////////
+// Two-phase Set //
+//////////////////
 
+// This kind of sets allows for removal of elements from the set by keeping a set of previously removed elements.
+// Once an element has been removed, it cannot be added back too the set.
+class deltaTwoPSet[V](added: Set[V] = new Set[V](), removed: Set[V] = new Set[V]()) extends DeltaCRDT[deltaTwoPSet[V]] {
+
+  // An element is in the set if it is in the added set, but not in the removed set.
+  def lookup(element: V) = this.added.contains(element) && !this.removed.contains(element)
+
+  // Adding an element can be achieved by adding it too the added set.
+  def add(element: V) = new deltaTwoPSet(new Set[V]().add(element), new Set[V]()) // delta
+
+  // Removing an element can be achieved by adding it too the removed set.
+  def remove(element: V) = new deltaTwoPSet(new Set[V](), new Set[V]().add(element)) // delta
+
+  // Two 2PSets can be merged by merging their respective added and removed sets
   def merge(that: deltaTwoPSet[V]) = {
     val mergedAdded = this.added.union(that.added)
     val mergedRemoved = this.removed.union(that.removed)
