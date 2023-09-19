@@ -3,20 +3,23 @@ import org.verifx.practical.crdts.CvRDTProof
 
 import org.verifx.practical.delta.deltaGCounter
 
-// Exercise 1: Implement a PN-Counter as a composition of two G-Counters
+// A PNCounter is implemented by combining two GCounters. One represents the increments, one the decrements.
 class deltaPNCounter(p: deltaGCounter = new deltaGCounter(), n: deltaGCounter = new deltaGCounter()) extends DeltaCRDT[deltaPNCounter] {
+
+  // Value can be computed by subtracting the decrements from the increments.
   def value() = this.p.value() - this.n.value()
 
+  // Increment by incrementing the GCounter representing increments.
   def increment(replica: Int) =
-    new deltaPNCounter(this.p.increment(replica), new deltaGCounter(new Vector[Int]()))
+    new deltaPNCounter(this.p.increment(replica), new deltaGCounter(new Vector[Int]())) // delta
 
+  // Decrement by incrementing the GCounter representing decrements.
   def decrement(replica: Int) =
-    new deltaPNCounter(new deltaGCounter(new Vector[Int]()), this.n.increment(replica))
+    new deltaPNCounter(new deltaGCounter(new Vector[Int]()), this.n.increment(replica)) // delta
 
+  // Merge by merging both GCounters
   def merge(that: deltaPNCounter) =
     new deltaPNCounter(this.p.merge(that.p), this.n.merge(that.n))
-
-
 }
 
 object deltaPNCounter extends CvRDTProof[deltaPNCounter]
