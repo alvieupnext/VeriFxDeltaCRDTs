@@ -5,6 +5,7 @@ import org.verifx.practical.crdts.CvRDTProof
 // Add Wins Observed Removed Set //
 //////////////////////////////////
 
+// Causal CRDT --> encpasulates dotkernel
 class deltaAWORSet[E, K](dk: DotKernel[E, K], id: K) extends DeltaCRDT[deltaAWORSet[E, K]] {
 
     def read(): Set[E] = {
