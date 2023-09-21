@@ -15,7 +15,7 @@ class RWLWWSet[U, T](s: Map[T, Tuple[U, Boolean]]) extends DeltaCRDT[RWLWWSet[U,
 
   private def <(t: Tuple[U, U]) = t.fst < t.snd
 
-  //Placeholder combine
+  //Placeholder combine (depends on how the values are combined
   def merge(that: RWLWWSet[U, T]) = new RWLWWSet(this.s.combine(that.s, (v1: Tuple[U, Boolean], v2: Tuple[U, Boolean]) => {
   if (this.<(new Tuple(v1.fst, v2.fst))) {
     v1

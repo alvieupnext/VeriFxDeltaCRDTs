@@ -1,5 +1,7 @@
 import org.verifx.practical.crdts.DeltaCRDT
 import org.verifx.practical.crdts.CvRDTProof
+import org.verifx.practical.delta.DotContext
+
 
 //////////////////////////////////////////////////////
 // A Causal Sequence Prototype Inspired by Treedoc //

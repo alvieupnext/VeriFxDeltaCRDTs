@@ -1,5 +1,6 @@
 import org.verifx.practical.crdts.DeltaCRDT
 import org.verifx.practical.crdts.CvRDTProof
+import org.verifx.practical.delta.DotKernel
 
 ///////////////////////////////////////
 // Causal Counter for Map Embedding //

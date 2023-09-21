@@ -8,6 +8,8 @@ import org.verifx.practical.crdts.CvRDTProof1
 // of the natural counter for that specific node.
 class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[DotContext[K]] {
 
+//Recursive function which checks that all dots have an int value lower than the highest known value (n) in the cc and that we have
+// n amount of dots in the set
 //    @recursive
 //    private def checkAscendingDots(key: K, dots: Set[Tuple[K, Int]], counter: Int, amountOfDots: Int): Boolean = {
 //        if (counter > amountOfDots) {
@@ -23,38 +25,33 @@ class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[D
         //get latest update from cc
         val amountOfDots = this.cc.getOrElse(key, 0)
         if (amountOfDots != 0) {
-            //check whether every dot is between 1 and the amountOfDots
+            //heavier condition
 //            this.checkAscendingDots(key, this.dc, 1, amountOfDots)
+            //lighter condition that only checks that the present dots in dc have an integer value between 1 and the amountOfDots
             dotsInSet.forall((tpl: Tuple[K, Int]) => 1 <= tpl.snd && tpl.snd <= amountOfDots)
             }
         else false
     }
 
+    //DotContext has been proven to be a CRDT (with no particular reachable constraints) however the DotKernel merge isn't commutative
+    // When trying to prove DotKernel merge, we tried making the dotcontext more limited however we then VeriFx fails to find a counter example
+    //because searching through the possible states is so computationally exhaustive. Relaxing conditions causes a counter example which is just not possible
+    // Therefore, the only way to prove DotKernels to be a CRDT is through making a merge that can also work with impossible states.
     override def reachable(): Boolean = {
-        //dots cannot be negative
-//        val ccValues = this.cc.values()
-//        val ccCondition = ccValues.forall((v: Int) => v >= 0)
-//        val dcCondition = this.dc.forall((t: Tuple[K, Int]) => t.snd >= 0)
-//        ccCondition && dcCondition
-        //get all keys from cc and dc
-        val ccKeys = this.cc.keys()
         //all values must be positive and not 0
         val ccValues = this.cc.values()
-        val ccCondition = ccValues.forall((v: Int) => v >= 0)
-        val dcCondition = this.dc.forall((t: Tuple[K, Int]) => t.snd >= 0)
-        val dcKeys = this.dc.map[K]((tuple: Tuple[K, Int]) => tuple.fst)
-        //get the difference between ccKeys and dcKeys (if the difference is empty, cc and dc have the same keys)
-        val diff = ccKeys.diff(dcKeys)
-        val diff2 = dcKeys.diff(ccKeys)
-        //if the difference isn't empty (inconsistent keys) return false
-//        if (diff.isEmpty()) {
-//            //all dots in cc must be represented in dc as a set with an integer that sums +1 until the value of the dot in cc
-//
-//        } else false
-//          this.cc.bijective()
-        ccCondition && dcCondition && diff.isEmpty() && diff2.isEmpty() && ccKeys.forall((key: K) => {
-                                          this.checkDotValidity(key)
-                                          })
+         //dots cannot be negative
+        if (ccValues.forall((v: Int) => v > 0) && this.dc.forall((t: Tuple[K, Int]) => t.snd > 0)){
+            //cc keys and dc keys must be  the same,
+            if (this.cc.keys() == this.dc.map[K]((tuple: Tuple[K, Int]) => tuple.fst)){
+                //dots must have validity (this condition makes verifx abort the proof)
+                this.cc.keys().forall((key: K) => {
+                                                       this.checkDotValidity(key)
+                                                        })
+            }
+            else false
+        }
+        else false
                                           }
 
     // Check whether a given dot is contained in the causal context
@@ -99,6 +96,7 @@ class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[D
      }
 }
 
+//DotKernel, cannot be proven to be working until the issues with the DotContext are resolved
 class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends DeltaCRDT[DotKernel[K, T]] {
     override def reachable(): Boolean = {
         val validContext = this.c.reachable()
@@ -110,6 +108,7 @@ class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends Delta
         else false
        }
 
+//First version of the merge function, was written with various set operations according to our limited understanding of the algorithm and the C++ code
 //    def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
 //        val thisKeys = this.ds.keys()
 //        val otherKeys = other.ds.keys()
@@ -127,6 +126,8 @@ class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends Delta
 //        val res = new DotKernel[K, T](newds, this.c.merge(other.c))
 //        res
 //    }
+
+// Second version of the merge, written as a recursive function to be exactly like the C++ code
 //
 //    def DSToList(ds: Map[Tuple[K, Int], T]): LList[Tuple[Tuple[K, Int], T]] = {
 //        val res = new LList[Tuple[Tuple[K, Int], T]]()
@@ -172,6 +173,7 @@ class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends Delta
 //        new DotKernel(DSres, Cres)
 //    }
 
+    //third version of merge, suggested by Professor Kevin De Porre
     def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
             //merge the data stores with common dots
             val commonDots = this.ds.zip(other.ds)
@@ -187,6 +189,7 @@ class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends Delta
             res
         }
 
+    //Adds a new key value pair to the dot kernel
     def add(id: K, value: T): DotKernel[K, T] = {
         val dot = this.c.makeDot(id)
         this.ds.add(dot, value)
@@ -196,6 +199,7 @@ class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends Delta
         res
     }
 
+    //Removes the key value pair from the dot kernel
     def rmv(dot: Tuple[K, Int]): DotKernel[K, T] = {
         val res = new DotKernel[K, T](new Map[Tuple[K, Int], T](), new DotContext[K](new Map[K, Int](), new Set[Tuple[K, Int]]()))
         if (this.ds.contains(dot)) {
