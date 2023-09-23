@@ -6,7 +6,7 @@ import org.verifx.practical.crdts.CvRDTProof1
 // dots can be used to represent a causal context. This represented in the dc variable in the state of the Dotcontext
 // class. A compacted form of the causal context can be represented with a map, mapping node IDs to the biggets value
 // of the natural counter for that specific node.
-class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[DotContext[K]] {
+class DotContext[K](cc: Map[K, Int] = new Map[K, Int](), dc: Set[Tuple[K, Int]] = new Set[Tuple[K, Int]]()) extends DeltaCRDT[DotContext[K]] {
 
 //Recursive function which checks that all dots have an int value lower than the highest known value (n) in the cc and that we have
 // n amount of dots in the set
@@ -38,20 +38,22 @@ class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[D
     //because searching through the possible states is so computationally exhaustive. Relaxing conditions causes a counter example which is just not possible
     // Therefore, the only way to prove DotKernels to be a CRDT is through making a merge that can also work with impossible states.
     override def reachable(): Boolean = {
-        //all values must be positive and not 0
-        val ccValues = this.cc.values()
-         //dots cannot be negative
-        if (ccValues.forall((v: Int) => v > 0) && this.dc.forall((t: Tuple[K, Int]) => t.snd > 0)){
-            //cc keys and dc keys must be  the same,
-            if (this.cc.keys() == this.dc.map[K]((tuple: Tuple[K, Int]) => tuple.fst)){
-                //dots must have validity (this condition makes verifx abort the proof)
-                this.cc.keys().forall((key: K) => {
-                                                       this.checkDotValidity(key)
-                                                        })
-            }
-            else false
-        }
-        else false
+//        //all values must be positive and not 0
+//        val ccValues = this.cc.values()
+//         //dots cannot be negative
+//        if (ccValues.forall((v: Int) => v > 0) && this.dc.forall((t: Tuple[K, Int]) => t.snd > 0)){
+//            //cc keys and dc keys must be  the same,
+//            if (this.cc.keys() == this.dc.map[K]((tuple: Tuple[K, Int]) => tuple.fst)){
+//                //dots must have validity (this condition makes verifx abort the proof)
+//
+//                this.cc.keys().forall((key: K) => {
+//                                                       this.checkDotValidity(key)
+//                                                        })
+//            }
+//            else false
+//        }
+//        else false
+        true
                                           }
 
     // Check whether a given dot is contained in the causal context
