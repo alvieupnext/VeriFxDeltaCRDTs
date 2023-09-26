@@ -5,28 +5,52 @@ import org.verifx.practical.crdts.CvRDTProof
 // Add Wins Observed Removed Set //
 //////////////////////////////////
 
-// Causal CRDT --> encpasulates dotkernel
+// The deltaAWORSet class is parameterized by two types: E (element type) and K (key type).
+// It extends the DeltaCRDT trait, implying it's a Conflict-free Replicated Data Type.
 class deltaAWORSet[E, K](dk: DotKernel[E, K], id: K) extends DeltaCRDT[deltaAWORSet[E, K]] {
 
+    // Read the current elements of the set.
     def read(): Set[E] = {
+        // Create a new empty set to store the results.
         val res = new Set[E]()
-        this.dk.ds.forall((k, v) => res.add(k.snd))
+
+        // Iterate over the DotKernel's data structure.
+        this.dk.ds.forall((k, v) => {
+            // Add the second part of the tuple (the element) to the result set.
+            res.add(k.snd)
+            true
+        })
         res
     }
 
+    // Add an element to the set.
     def add(e: E): deltaAWORSet[E, K] = {
+        // Create a new set instance.
         val res = new deltaAWORSet[E,K]()
+
+        // Remove any existing entries for the element from the current DotKernel.
         res.dk = this.dk.rmv(e)
+
+        // Merge the result of adding a new entry for the element into the new set's DotKernel.
+        // Result of addition is is represented in delta
         res.dk.merge(dk.add(id, e))
         res
     }
 
+    // Remove an element from the set.
     def rmv(e: E): deltaAWORSet[E, K] = {
+        // Create a new set instance.
         val res = new deltaAWORSet[E,K]()
+
+        // Remove the element from the current DotKernel and assign it to the new set's DotKernel.
         res.dk = this.dk.rmv(e)
+
+        // The removals only affect the elements that are visible locally, so that a concurrent removal
+        // and addition of the same element will result in the element still being present after joining the sets.
         res
     }
 
+    // Merge another set into this one.
     def merge(other: deltaAWORSet[E,K]): Unit = {
         this.dk.merge(other.dk)
     }
