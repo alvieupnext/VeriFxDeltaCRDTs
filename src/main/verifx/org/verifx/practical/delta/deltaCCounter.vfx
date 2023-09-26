@@ -5,27 +5,48 @@ import org.verifx.practical.crdts.CvRDTProof
 // Causal Counter for Map Embedding //
 /////////////////////////////////////
 
+// The deltaCCounter class is parameterized by two types: V and K.
+// It extends the DeltaCRDT trait, implying it's a Conflict-free Replicated Data Type.
 class deltaCCounter[V, K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[deltaCCounter[V, K]] {
 
+    // Increment the counter.
     def inc(): deltaCCounter[V, K] = {
+        // Create a new counter instance.
         val res = new deltaCCounter[V, K]()
+
+        // Create a set to store dot entries.
         val dots = new Set[Tuple[K, Int]]
+
+        // Initialize a base value.
         val base = new V
+
+        // Iterate over the DotKernel's data structure.
         this.dk.ds.forall((k, v) => {
+            // If the first part of the tuple matches the current ID...
             if (k.fst.fst == this.id) {
+                // Update the base value with the maximum of its current value and the second part of the tuple.
                 base = max(base, k.snd)
+
+                // Add the first part of the tuple to the dots set.
                 dots.add(k.first)
             }
             true
         })
+
+        // For each dot in the dots set...
         dots.forall((dot) => {
+            // Merge the result of removing the dot from the current DotKernel into the new counter's DotKernel.
             res.dk.merge(this.dk.rmv(dot))
             true
         })
+
+        // Merge the result of adding a new dot with the incremented base value into the new counter's DotKernel.
         res.dk.merge(this.dk.add(id, base + 1))
     }
 
+    // Decrement the counter.
     def dec(): deltaCCounter[V, K] = {
+        // (The logic here is similar to the inc() method, but with decrementing the base value.)
         val res = new deltaCCounter[V, K]()
         val dots = new Set[Tuple[K, Int]]
         val base = new V
@@ -43,14 +64,20 @@ class deltaCCounter[V, K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[de
         res.dk.merge(this.dk.add(id, base - 1))
     }
 
+    // Reset the counter.
     def reset(): deltaCCounter[V, K] = {
         val res = deltaCCounter[V, K]()
+
+        // Remove all entries from the current DotKernel and assign it to the new counter's DotKernel.
         res.dk = this.dk.rmv()
         res
     }
 
+    // Read the current value of the counter.
     def read(): V = {
         val res = new V
+
+        // Iterate over the DotKernel's data structure and sum up the values.
         this.dk.ds.forall((k, v) => {
             v += k.snd
             true
@@ -58,6 +85,7 @@ class deltaCCounter[V, K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[de
         res
     }
 
+    // Merge another counter into this one.
     def join(other: deltaCCounter[V, K]): Unit = {
         this.dk.merge(other.dk)
     }
