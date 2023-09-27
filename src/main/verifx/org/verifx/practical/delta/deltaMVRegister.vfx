@@ -5,29 +5,54 @@ import org.verifx.practical.crdts.CvRDTProof
 // Multi-Value Register //
 /////////////////////////
 
+// The deltaMVRegister class represents a Multi-Value Register (MVRegister), a type of CRDT that can store multiple values.
+// It is parameterized by two types: V (value type) and K (unique identifier type for actors/agents).
 class deltaMVRegister[V, K](dk: DotKernel[V, K], id: K) extends DeltaCRDT[deltaMVRegister[V, K]] {
 
+    // Write a new value to the MVRegister.
+    // This operation creates a new instance of the MVRegister, removes all existing values from the DotKernel,
+    // and then adds the new value with the current actor's ID.
+    // This ensures that the new value has the latest causal information.
     def write(value: V): deltaMVRegister[V, K] = {
-        res = new deltaMVRegister[V, K]()
-        a = new deltaMVRegister[V, K]()
-        res.dk = this.dk.rmv()
-        a.dk = this.dk.add(this.id, value)
+        // Create a new MVRegister instance with all existing values removed.
+        res = new deltaMVRegister[V, K](this.dk.rmv(), id)
+
+        // Create another MVRegister instance with the new value added.
+        a = new deltaMVRegister[V, K](this.dk.add(this.id, value), id)
+
+        // Merge the two MVRegister instances to combine their states.
         res.merge(a)
+
+        // Return the merged MVRegister instance.
         res
     }
 
+    // Read the current values stored in the MVRegister.
+    // Since it's a Multi-Value Register, it can return multiple values.
     def read(): Set[V] = {
+        // Create a new empty set to store the results.
         res = new Set[V]()
-        this.dk.ds.forall((k, v) => res.add(k.snd))
+
+        // Iterate over the DotKernel's data structure.
+        this.dk.ds.forall((k, v) => {
+            // Add the second part of the tuple (the value) to the result set.
+            res.add(k.snd)
+            true
+        })
+
+        // Return the set of values.
         res
     }
 
+    // Reset the MVRegister to its default state (empty).
+    // This operation creates a new instance of the MVRegister and clears all values from the DotKernel.
     def reset(): deltaMVRegister[V, K] = {
-        res = new deltaMVRegister[V, K]()
-        res.dk = this.dk.rmv()
+        res = new deltaMVRegister[V, K](this.dk.rmv(), id)
         res
     }
 
+    // Merge the state of another deltaMVRegister instance into this one.
+    // This operation combines the causal histories of both registers to ensure that all operations are accounted for.
     def merge(other: deltaMVRegister[V, K]): deltaMVRegister[V, K] = {
         this.dk.merge(other.dk)
     }
