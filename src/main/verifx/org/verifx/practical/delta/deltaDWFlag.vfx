@@ -5,19 +5,30 @@ import org.verifx.practical.crdts.CvRDTProof
 // Delta Disable-Wins Flag //
 ////////////////////////////
 
-// Define a class named deltaDWFlag with a type parameter K. It extends a DeltaCRDT with itself as the type parameter.
+// The deltaDWFlag class represents a Disable-Wins Flag, a type of CRDT flag where "disable" operations take precedence.
+// It is parameterized by a type K which represents the type of the unique identifier for replicas.
 class deltaDWFlag[K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[deltaDWFlag[K]] {
 
+    // Read the current state of the flag.
+    // If the keys of the underlying DotKernel's data structure are empty, the flag is considered to be in its default state (true).
+    // Otherwise, it's false (disabled).
     def read(): Boolean = {
         this.dk.ds.keys.isEmpty()
     }
 
+    // Enable the flag.
+    // This operation creates a new instance of the flag and removes any "false" values from the DotKernel.
+    // Essentially, it clears any "disable" operations, setting the flag to its default state.
     def enable(): deltaDWFlag[K] = {
         val res = new deltaDWFlag[K]()
         res.dk = this.dk.rmv(false)
         res
     }
 
+    // Disable the flag.
+    // This operation creates a new instance of the flag, removes any "false" values from the DotKernel,
+    // and then adds a new "false" value with the current actor's ID.
+    // This ensures that the "disable" operation has the latest causal information and will "win" over any concurrent "enable" operations.
     def disable(): deltaDWFlag[K] = {
         val res = new deltaDWFlag[K]()
         res.dk = this.dk.rmv(false)
@@ -25,15 +36,16 @@ class deltaDWFlag[K](dk: DotKernel[Boolean, K], id: K) extends DeltaCRDT[deltaDW
         res
     }
 
-    // Method to reset the flag. It creates a new instance of deltaDWFlag and sets its dot kernel to the result
-    // of removing all values from the current dot kernel.
+    // Reset the flag to its default state (enabled).
+    // This operation creates a new instance of the flag and clears all values from the DotKernel.
     def reset(): deltaDWFlag[K] = {
         val res = new deltaDWFlag[K]()
         res.dk = this.dk.rmv()
         res
     }
 
-    // Method to join another deltaDWFlag instance with this instance. It joins the dot kernels of both instances.
+    // Merge the state of another deltaDWFlag instance into this one.
+    // This operation combines the causal histories of both flags to ensure that all operations are accounted for.
     def merge(other: deltaDWFlag[K]): Unit = {
         this.dk.merge(other.dk)
     }
