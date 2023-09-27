@@ -6,16 +6,18 @@ import org.verifx.practical.crdts.CvRDTProof1
 // dots can be used to represent a causal context. This represented in the dc variable in the state of the Dotcontext
 // class. A compacted form of the causal context can be represented with a map, mapping node IDs to the biggets value
 // of the natural counter for that specific node.
-class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[DotContext[K]] {
+class DotContext[K](cc: Map[K, Int] = new Map[K, Int](), dc: Set[Tuple[K, Int]] = new Set[Tuple[K, Int]]()) extends DeltaCRDT[DotContext[K]] {
 
-    @recursive
-    private def checkAscendingDots(key: K, dots: Set[Tuple[K, Int]], counter: Int, amountOfDots: Int): Boolean = {
-        if (counter > amountOfDots) {
-            true
-        } else if (dots.contains(new Tuple[K, Int](key, counter))) {
-             this.checkAscendingDots(key, dots, counter + 1, amountOfDots)}
-             else false
-        }
+//Recursive function which checks that all dots have an int value lower than the highest known value (n) in the cc and that we have
+// n amount of dots in the set
+//    @recursive
+//    private def checkAscendingDots(key: K, dots: Set[Tuple[K, Int]], counter: Int, amountOfDots: Int): Boolean = {
+//        if (counter > amountOfDots) {
+//            true
+//        } else if (dots.contains(new Tuple[K, Int](key, counter))) {
+//             this.checkAscendingDots(key, dots, counter + 1, amountOfDots)}
+//             else false
+//        }
 
     private def checkDotValidity(key: K): Boolean = {
         //get all dots from dc that contain the key
@@ -23,37 +25,36 @@ class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[D
         //get latest update from cc
         val amountOfDots = this.cc.getOrElse(key, 0)
         if (amountOfDots != 0) {
-            this.checkAscendingDots(key, this.dc, 1, amountOfDots)
+            //heavier condition
+//            this.checkAscendingDots(key, this.dc, 1, amountOfDots)
+            //lighter condition that only checks that the present dots in dc have an integer value between 1 and the amountOfDots
+            dotsInSet.forall((tpl: Tuple[K, Int]) => 1 <= tpl.snd && tpl.snd <= amountOfDots)
             }
         else false
     }
 
+    //DotContext has been proven to be a CRDT (with no particular reachable constraints) however the DotKernel merge isn't commutative
+    // When trying to prove DotKernel merge, we tried making the dotcontext more limited however we then VeriFx fails to find a counter example
+    //because searching through the possible states is so computationally exhaustive. Relaxing conditions causes a counter example which is just not possible
+    // Therefore, the only way to prove DotKernels to be a CRDT is through making a merge that can also work with impossible states.
     override def reachable(): Boolean = {
-        //dots cannot be negative
+//        //all values must be positive and not 0
 //        val ccValues = this.cc.values()
-//        val ccCondition = ccValues.forall((v: Int) => v >= 0)
-//        val dcCondition = this.dc.forall((t: Tuple[K, Int]) => t.snd >= 0)
-//        ccCondition && dcCondition
-        //get all keys from cc and dc
-        val ccKeys = this.cc.keys()
-        //all values must be positive and not 0
-        val ccValues = this.cc.values()
-        val ccCondition = ccValues.forall((v: Int) => v >= 0)
-        val dcCondition = this.dc.forall((t: Tuple[K, Int]) => t.snd >= 0)
-        val dcKeys = this.dc.map[K]((tuple: Tuple[K, Int]) => tuple.fst)
-        //get the difference between ccKeys and dcKeys (if the difference is empty, cc and dc have the same keys)
-        val diff = ccKeys.diff(dcKeys)
-        val diff2 = dcKeys.diff(ccKeys)
-        //if the difference isn't empty (inconsistent keys) return false
-//        if (diff.isEmpty()) {
-//            //all dots in cc must be represented in dc as a set with an integer that sums +1 until the value of the dot in cc
+//         //dots cannot be negative
+//        if (ccValues.forall((v: Int) => v > 0) && this.dc.forall((t: Tuple[K, Int]) => t.snd > 0)){
+//            //cc keys and dc keys must be  the same,
+//            if (this.cc.keys() == this.dc.map[K]((tuple: Tuple[K, Int]) => tuple.fst)){
+//                //dots must have validity (this condition makes verifx abort the proof)
 //
-//        } else false
-//          this.cc.bijective()
-        ccCondition && dcCondition && diff.isEmpty() && diff2.isEmpty() && ccKeys.forall((key: K) => {
-                                          this.checkDotValidity(key)
-                                          })}
-//}
+//                this.cc.keys().forall((key: K) => {
+//                                                       this.checkDotValidity(key)
+//                                                        })
+//            }
+//            else false
+//        }
+//        else false
+        true
+                                          }
 
     // Check whether a given dot is contained in the causal context
     def dotIn(d: Tuple[K, Int]): Boolean = {
@@ -97,18 +98,19 @@ class DotContext[K](cc: Map[K, Int], dc: Set[Tuple[K, Int]]) extends DeltaCRDT[D
      }
 }
 
+//DotKernel, cannot be proven to be working until the issues with the DotContext are resolved
 class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends DeltaCRDT[DotKernel[K, T]] {
     override def reachable(): Boolean = {
         val validContext = this.c.reachable()
-         val dsDots = this.ds.keys()
-         //every dot in the dot map needs to be present in the causal context
-         //check whether every single dot in the dsDots is present in the Causal Context
-         val firstCond = dsDots.forall((v: Tuple[K, Int]) => this.c.dotIn(v))
-         //dots can never have a negative integer
-         val secondCond = dsDots.forall((v: Tuple[K, Int]) => v.snd >= 0)
-         validContext && firstCond && secondCond
+        if (validContext) {
+           //every dot in the dot map needs to be present in the causal context
+           //check whether every single dot in the dsDots is present in the Causal Context
+            this.ds.forall((k: Tuple[K, Int], v: T) => k.snd >= 0 && this.c.dotIn(k))
+        }
+        else false
        }
 
+//First version of the merge function, was written with various set operations according to our limited understanding of the algorithm and the C++ code
 //    def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
 //        val thisKeys = this.ds.keys()
 //        val otherKeys = other.ds.keys()
@@ -127,50 +129,69 @@ class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends Delta
 //        res
 //    }
 
-    def DSToList(ds: Map[Tuple[K, Int], T]): LList[Tuple[Tuple[K, Int], T]] = {
-        val res = new LList[Tuple[Tuple[K, Int], T]]()
-        ds.forall((k: Tuple[K, Int], v: T) => {
-            res.insert(0, new Tuple[Tuple[K, Int], T](k, v))
-            true
-        })
-        res
-    }
+// Second version of the merge, written as a recursive function to be exactly like the C++ code
+//
+//    def DSToList(ds: Map[Tuple[K, Int], T]): LList[Tuple[Tuple[K, Int], T]] = {
+//        val res = new LList[Tuple[Tuple[K, Int], T]]()
+//        ds.forall((k: Tuple[K, Int], v: T) => {
+//            res.insert(0, new Tuple[Tuple[K, Int], T](k, v))
+//            true
+//        })
+//        res
+//    }
+//
+//    @recursive
+//    def mergeDSs(thisDS: LList[Tuple[Tuple[K, Int], T]], otherDS: LList[Tuple[Tuple[K, Int], T]],
+//     thisPos: Int, otherPos: Int, res: Map[Tuple[K, Int], T], oc: DotContext[K]): Map[Tuple[K, Int], T] = {
+//        if (!(thisPos == thisDS.size && otherPos == otherDS.size)) { // while not at the end of both sequences
+//            val thisCurEl = thisDS.get(thisPos)
+//            val otherCurEl = otherDS.get(otherPos)
+//            // tow dots are smaller if the timestamp is smaller
+//            if (thisPos != thisDS.size && (otherPos == otherDS.size || thisCurEl.fst.snd < otherCurEl.fst.snd)) {
+//                if (oc.dotIn(thisCurEl.fst)) { // other knows dot, must delete here
+//                    res.remove(thisCurEl.fst)
+//                    this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos, res, oc)
+//                } else {
+//                    this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos, res, oc)
+//                }
+//            } else if (otherPos != otherDS.size && (thisPos == thisDS.size || otherCurEl.fst.snd < thisCurEl.fst.snd)) {
+//                if (!this.c.dotIn(otherCurEl.fst)) {
+//                    res.add(otherCurEl.fst, otherCurEl.snd)
+//                    this.mergeDSs(thisDS, otherDS, thisPos, otherPos + 1, res, oc)
+//                } else {
+//                    this.mergeDSs(thisDS, otherDS, thisPos, otherPos + 1, res, oc)
+//                }
+//            } else {
+//                this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos + 1, res, oc)
+//            }
+//        } else res
+//    }
+//
+//    def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
+//        val thisDSlist = this.DSToList(this.ds)
+//        val otherDSlist = this.DSToList(other.ds)
+//        val DSres = this.mergeDSs(thisDSlist, otherDSlist, 0, 0, this.ds, other.c)
+//        val Cres = this.c.merge(other.c)
+//        new DotKernel(DSres, Cres)
+//    }
 
-    @recursive
-    def mergeDSs(thisDS: LList[Tuple[Tuple[K, Int], T]], otherDS: LList[Tuple[Tuple[K, Int], T]],
-     thisPos: Int, otherPos: Int, res: Map[Tuple[K, Int], T], oc: DotContext[K]): Map[Tuple[K, Int], T] = {
-        if (!(thisPos == thisDS.size && otherPos == otherDS.size)) { // while not at the end of both sequences
-            val thisCurEl = thisDS.get(thisPos)
-            val otherCurEl = otherDS.get(otherPos)
-            // tow dots are smaller if the timestamp is smaller
-            if (thisPos != thisDS.size && (otherPos == otherDS.size || thisCurEl.fst.snd < otherCurEl.fst.snd)) {
-                if (oc.dotIn(thisCurEl.fst)) { // other knows dot, must delete here
-                    res.remove(thisCurEl.fst)
-                    this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos, res, oc)
-                } else {
-                    this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos, res, oc)
-                }
-            } else if (otherPos != otherDS.size && (thisPos == thisDS.size || otherCurEl.fst.snd < thisCurEl.fst.snd)) {
-                if (!this.c.dotIn(otherCurEl.fst)) {
-                    res.add(otherCurEl.fst, otherCurEl.snd)
-                    this.mergeDSs(thisDS, otherDS, thisPos, otherPos + 1, res, oc)
-                } else {
-                    this.mergeDSs(thisDS, otherDS, thisPos, otherPos + 1, res, oc)
-                }
-            } else {
-                this.mergeDSs(thisDS, otherDS, thisPos + 1, otherPos + 1, res, oc)
-            }
-        } else res
-    }
-
+    //third version of merge, suggested by Professor Kevin De Porre
     def merge(other: DotKernel[K, T]): DotKernel[K, T] = {
-        val thisDSlist = this.DSToList(this.ds)
-        val otherDSlist = this.DSToList(other.ds)
-        val DSres = this.mergeDSs(thisDSlist, otherDSlist, 0, 0, this.ds, other.c)
-        val Cres = this.c.merge(other.c)
-        new DotKernel(DSres, Cres)
-    }
+            //merge the data stores with common dots
+            val commonDots = this.ds.zip(other.ds)
+            //values of the new map are tuples of values so change it to return one value
+            val commonDS = commonDots.map((key: Tuple[K, Int], value: Tuple[T, T]) => value.fst)
+            //values
+            val myDotsNotInOtherContext = this.ds.filter((key: Tuple[K, Int], value: T) => !other.c.dotIn(key))
+            val otherDotsNotInMyContext = other.ds.filter((key: Tuple[K, Int], value: T) => !this.c.dotIn(key))
+            //Dots to add
+            val dotsToAdd = myDotsNotInOtherContext.combine(otherDotsNotInMyContext, (v1: T, v2:T) => v1)
+            val newds = commonDS.combine(dotsToAdd, (v1: T, v2:T) => v1)
+            val res = new DotKernel[K, T](newds, this.c.merge(other.c))
+            res
+        }
 
+    //Adds a new key value pair to the dot kernel
     def add(id: K, value: T): DotKernel[K, T] = {
         val dot = this.c.makeDot(id)
         this.ds.add(dot, value)
@@ -180,6 +201,7 @@ class DotKernel[K, T](ds: Map[Tuple[K, Int], T], c: DotContext[K]) extends Delta
         res
     }
 
+    //Removes the key value pair from the dot kernel
     def rmv(dot: Tuple[K, Int]): DotKernel[K, T] = {
         val res = new DotKernel[K, T](new Map[Tuple[K, Int], T](), new DotContext[K](new Map[K, Int](), new Set[Tuple[K, Int]]()))
         if (this.ds.contains(dot)) {

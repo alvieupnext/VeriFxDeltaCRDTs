@@ -4,32 +4,46 @@ import org.verifx.practical.Prover
 import org.scalatest.FlatSpec
 
 class ProofTests extends FlatSpec with Prover {
-//  "deltaGCounter" should "be a CRDT" in {
-//    val proof = ("deltaGCounter", "is_a_CvRDT")
-//    prove(proof)
-//  }
+  "deltaGCounter" should "be a CRDT" in {
+    val proof = ("deltaGCounter", "is_a_CvRDT")
+    prove(proof)
+  }
 
-//  "deltaGSet" should "be a CRDT" in {
-//    val proof = ("deltaGSet", "is_a_CvRDT")
-//    prove(proof)
-//  }
+  "deltaGSet" should "be a CRDT" in {
+    val proof = ("deltaGSet", "is_a_CvRDT")
+    prove(proof)
+  }
 
-//  "deltaTwoPSet" should "be a CRDT" in {
-//    val proof = ("deltaTwoPSet", "is_a_CvRDT")
-//    prove(proof)
-//  }
+  "deltaTwoPSet" should "be a CRDT" in {
+    val proof = ("deltaTwoPSet", "is_a_CvRDT")
+    prove(proof)
+  }
 
-//  "DotKernel" should "be a CRDT" in {
-//    val proof = ("DotKernel", "is_a_CvRDT")
-//    val res = rejectForModel(proof)
-//    println(res.toString())
-////    prove(proof)
-//  }
+    "DotContext" should "be a CRDT" in {
+      val proof = ("DotContext", "is_a_CvRDT")
+      prove(proof)
+    }
 
-//    "deltaGMap" should "be a CRDT" in {
-//      val proof = ("deltaTwoPSet", "is_a_CvRDT")
+      "deltaGMap" should "be a CRDT" in {
+        val proof = ("deltaTwoPSet", "is_a_CvRDT")
+        prove(proof)
+      }
+
+//    "deltaORSeq" should "be a CRDT" in {
+//      val proof = ("deltaORSeq", "is_a_CvRDT")
 //      prove(proof)
 //    }
+
+    "deltaPNCounter" should "be a CRDT" in {
+      val proof = ("deltaPNCounter", "is_a_CvRDT")
+      prove(proof)
+    }
+
+  "deltaLexCounter" should "be a CRDT" in {
+    val proof = ("deltaLexCounter", "is_a_CvRDT")
+    prove(proof)
+  }
+
 
 //  "RWLWWSet" should "be a CRDT" in {
 //    val proof = ("RWLWWSet", "is_a_CvRDT")
@@ -43,20 +57,6 @@ class ProofTests extends FlatSpec with Prover {
 ////    val res = rejectForModel(proof)
 ////    println(res.toString())
 //    prove(proof)
-//  }
-
-    "DotKernel" should "be a CRDT" in {
-      val proof = ("DotKernel", "is_a_CvRDT")
-//      val res = rejectForModel(proof)
-//      println(res.toString())
-          prove(proof)
-    }
-
-//    "DotContext" should "be a CRDT" in {
-//    val proof = ("DotContext", "is_a_CvRDT")
-////    val res = rejectForModel(proof)
-////    println(res.toString())
-//        prove(proof)
 //  }
 
 //  "PNCounter" should "be a CRDT" in {
